@@ -1,0 +1,30 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.10.3
+      - name: Cache Python dependencies
+        uses: actions/cache@v2
+        env:
+          cache-name: cashflow-cache-pip
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-${{ github.job }}-${{ env.cache-name }}-${{ hashFiles('Pipfile', 'Pipfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ github.job }}-${{ env.cache-name }}-
+            ${{ runner.os }}-${{ github.job }}-
+            ${{ runner.os }}-
+      - name: Install Python dependencies
+        run: |
+          pip install --user pipenv
+          pipenv install
+          pipenv shell
+      - name: Run Linting
+        run: |
+          black . --check --diff; isort --diff -rc .; pylint .; mypy .
