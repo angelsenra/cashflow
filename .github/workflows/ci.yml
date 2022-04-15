@@ -22,12 +22,12 @@ jobs:
             ${{ runner.os }}-
       - name: Install Python dependencies
         run: |
-          pwd
-          ls -la
           cd backend
           pip install --user pipenv
           pipenv install
-          pipenv shell
       - name: Run Linting
         run: |
-          black . --check --diff; isort --diff -rc .; pylint .; mypy .
+          pipenv run black . --check --diff
+          pipenv run isort --diff -rc .
+          pipenv run pylint .
+          pipenv run mypy .
