@@ -9,9 +9,9 @@ jobs:
       uses: sunnysid3up/python-linter@master
       with:
         django: true
-        source: "./backend"
+        source: "backend"
   tests:
     runs-on: ubuntu-latest
     steps:
     - name: Run tests
-      run: "echo TODO: run tests"
+      run: "pwd; ls -la; echo TODO: run tests"
