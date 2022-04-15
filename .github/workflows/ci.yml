@@ -25,6 +25,9 @@ jobs:
           cd backend
           pip install --user pipenv
           echo "Installed pipenv."
+          pipenv install
+          pwd
+          ls -la
           pipenv sync
           echo "Installed pipenv requirements."
       - name: Run Linting
