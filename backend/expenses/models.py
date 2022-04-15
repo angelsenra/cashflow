@@ -1,10 +1,12 @@
 import itertools
 import logging
 import uuid
-from django.db import models
+
 from colorfield.fields import ColorField
+from django.db import models
 
 logger = logging.getLogger(__name__)
+
 
 class Category(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -12,7 +14,7 @@ class Category(models.Model):
     updated_at = models.DateTimeField(auto_now_add=True)
     name = models.CharField(max_length=200)
     order = models.IntegerField()
-    color = ColorField(default='#FF0000')
+    color = ColorField(default="#FF0000")
     parent = models.ForeignKey("self", related_name="children", null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
@@ -23,7 +25,9 @@ class Category(models.Model):
 
     def build_levels(self, iteration=0) -> list[list[tuple["Category", bool]]]:
         if iteration > 50:
-            raise Exception(f"We hit 50 iterations on the recursive levels call. There might be something wrong with {self}")
+            raise Exception(
+                f"We hit 50 iterations on the recursive levels call. There might be something wrong with {self}"
+            )
 
         if self is None:
             children = Category.objects.filter(parent=None).all()
@@ -44,7 +48,9 @@ class Category(models.Model):
         if filter_ is None:
             filter_ = dict()
         if iteration > 50:
-            raise Exception(f"We hit 50 iterations on the recursive levels call. There might be something wrong with {self}")
+            raise Exception(
+                f"We hit 50 iterations on the recursive levels call. There might be something wrong with {self}"
+            )
 
         if self is None:
             children = Category.objects.filter(parent=None).all()
@@ -56,10 +62,16 @@ class Category(models.Model):
         if not children:
             return [(other, False)]
 
-        children_values = list(itertools.chain(*[child.build_values(iteration=iteration + 1, filter_=filter_) for child in children]))
+        children_values = list(
+            itertools.chain(*[child.build_values(iteration=iteration + 1, filter_=filter_) for child in children])
+        )
         if self is None:
             return children_values
-        return [(other + sum(value for value, is_total in children_values if not is_total), True), *children_values, (other, False)]
+        return [
+            (other + sum(value for value, is_total in children_values if not is_total), True),
+            *children_values,
+            (other, False),
+        ]
 
 
 class Expense(models.Model):
