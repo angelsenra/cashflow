@@ -24,10 +24,16 @@ jobs:
         run: |
           cd backend
           pip install --user pipenv
-          pipenv install
+          echo "Installed pipenv."
+          pipenv sync
+          echo "Installed pipenv requirements."
       - name: Run Linting
         run: |
           pipenv run black . --check --diff
+          echo "Ran black."
           pipenv run isort --diff -rc .
+          echo "Ran isort."
           pipenv run pylint .
+          echo "Ran pylint."
           pipenv run mypy .
+          echo "Ran mypy."
