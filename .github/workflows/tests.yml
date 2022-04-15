@@ -1,0 +1,17 @@
+name: 'Tests'
+on:
+  push:
+jobs:
+  linting:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Run linters
+      uses: sunnysid3up/python-linter@master
+      with:
+        source: "backend"
+        django: true
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Run tests
+      run: "echo TODO: run tests"
