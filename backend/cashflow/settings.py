@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
+import typing
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -25,7 +26,7 @@ SECRET_KEY = "django-insecure-7s1!ig97kpzs2l$6@t#dkg3#zbgmtr#oacxf2du94n(dvxjigf
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True  # FIXME env var (or dependant on ENVIRONMENT=development)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS: list[typing.Any] = []
 
 
 # Application definition

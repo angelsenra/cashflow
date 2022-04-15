@@ -1,5 +1,6 @@
 import itertools
 import logging
+import typing
 import uuid
 
 from colorfield.fields import ColorField
@@ -23,7 +24,7 @@ class Category(models.Model):
         else:
             return f"{self.name}"
 
-    def build_levels(self, iteration=0) -> list[list[tuple["Category", bool]]]:
+    def build_levels(self: typing.Union["Category", None], iteration=0) -> list[list[tuple["Category", bool]]]:
         if iteration > 50:
             raise Exception(
                 f"We hit 50 iterations on the recursive levels call. There might be something wrong with {self}"
@@ -44,7 +45,7 @@ class Category(models.Model):
                 levels.append(list(itertools.chain(*list_of_each_level)))
         return levels
 
-    def build_values(self, iteration=0, filter_=None) -> list[tuple[int, bool]]:
+    def build_values(self: typing.Union["Category", None], iteration=0, filter_=None) -> list[tuple[float, bool]]:
         if filter_ is None:
             filter_ = dict()
         if iteration > 50:
@@ -54,7 +55,7 @@ class Category(models.Model):
 
         if self is None:
             children = Category.objects.filter(parent=None).all()
-            other = 0
+            other = 0.0
         else:
             children = self.children.all()
             other = sum(expense.amount for expense in self.expenses.filter(**filter_).all())
