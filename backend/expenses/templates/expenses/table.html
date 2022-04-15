@@ -22,8 +22,8 @@
     {% if forloop.counter0 == 0 %}
     <th rowspan="{{ header_rows|length }}"></th>
     {% endif %}
-    {% for name, colspan, rowspan in header_row %}
-    <th colspan="{{ colspan }}" rowspan="{{ rowspan }}">{{ name }}</th>
+    {% for name, colspan, rowspan, color in header_row %}
+    <th colspan="{{ colspan }}" rowspan="{{ rowspan }}" style="background: {{ color }}">{{ name }}</th>
     {% endfor %}
   </tr>
   {% endfor %}

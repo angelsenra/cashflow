@@ -22,7 +22,7 @@ class Category(models.Model):
         else:
             return f"{self.name}"
 
-    def build_levels(self, iteration=0) -> tuple[list[list[tuple["Category", bool]]], int]:
+    def build_levels(self, iteration=0) -> list[list[tuple["Category", bool]]]:
         if iteration > 50:
             raise Exception(f"We hit 50 iterations on the recursive levels call. There might be something wrong with {self}")
 
@@ -33,17 +33,13 @@ class Category(models.Model):
             children = self.children.all()
             levels = [[(self, bool(children))]]
 
-        children_levels = [c.build_levels(iteration=iteration + 1)[0] for c in children]
+        children_levels = [child.build_levels(iteration=iteration + 1) for child in children]
         if children_levels:
-            for i in range(max([len(cl) for cl in children_levels])):
-                li = list()
-                for cl in children_levels:
-                    if len(cl) <= i:
-                        continue
-                    li.extend(cl[i])
-                levels.append(li)
-        columns = sum(len(l) + len([i for i in l if i[1]]) for l in levels[::-1])
-        return levels, columns
+            for list_of_each_level in itertools.zip_longest(*children_levels):
+                # zip_longest adds None if one of the children levels was shorter
+                list_of_each_level = [i for i in list_of_each_level if i is not None]
+                levels.append(list(itertools.chain(*list_of_each_level)))
+        return levels
 
     def build_values(self, iteration=0) -> list[tuple[int, bool]]:
         if iteration > 50:
@@ -62,7 +58,7 @@ class Category(models.Model):
         children_values = list(itertools.chain(*[child.build_values(iteration=iteration + 1) for child in children]))
         if self is None:
             return children_values
-        return [(other + sum(v[0] for v in children_values if not v[1]), True), *children_values, (other, False)]
+        return [(other + sum(value for value, is_total in children_values if not is_total), True), *children_values, (other, False)]
 
 
 class Expense(models.Model):
