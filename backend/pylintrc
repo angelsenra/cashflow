@@ -1,0 +1,46 @@
+[MESSAGES CONTROL]
+
+# Disable all to choose them one by one
+disable=all
+
+# https://pylint.readthedocs.io/en/latest/technical_reference/features.html
+enable=
+        # classes
+        abstract-method,            # Used when an abstract method (i.e. raise NotImplementedError) is not overridden in concrete class.
+        bad-staticmethod-argument,  # Used when a static method has "self" or a value specified in valid- classmethod-first-arg option or valid-metaclass-classmethod-first-arg option as first argument.
+        # other
+        bad-indentation,            # Used when an unexpected number of indentation’s tabulations or spaces has been found.
+        deprecated-module,          # Used a module marked as deprecated is imported.
+        function-redefined,         # Used when a function / class / method is redefined.
+        mixed-indentation,          # Used when there are some mixed tabs and spaces in a module.
+        redefined-builtin,          # Used when a variable or function override a built-in.
+        unnecessary-semicolon,      # Used when a statement is ended by a semi-colon (”;”), which isn’t necessary.
+        unused-variable,            # Used when a variable is defined but not used. (Use _var to ignore var).
+        undefined-variable,         # Used when an undefined variable is accessed.
+        unused-import,              # Used when an imported module or variable is not used.
+        syntax-error
+
+
+[REPORTS]
+
+# Tells whether to display a full report or only the messages
+reports=no
+
+# Activate the evaluation score.
+score=no
+
+
+[FORMAT]
+
+# Number of spaces of indent required inside a hanging or continued line.
+indent-after-paren=4
+
+# String used as indentation unit. This is usually "    " (4 spaces) or "\t" (1
+# tab).
+indent-string='    '
+
+
+[EXCEPTIONS]
+
+# Exceptions that will emit a warning when being caught.
+overgeneral-exceptions=Exception

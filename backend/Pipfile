@@ -7,6 +7,10 @@ name = "pypi"
 django = "*"
 django-colorfield = "*"
 django-stubs = "*"
+black = "*"
+isort = "*"
+pylint = "*"
+mypy = "*"
 
 [dev-packages]
 
