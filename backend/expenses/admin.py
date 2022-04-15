@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Expense, Category, Priority
+from .models import Expense, Category
 
 
 class CategoryInline(admin.TabularInline):
@@ -8,10 +8,10 @@ class CategoryInline(admin.TabularInline):
     extra = 0
 
 
-class PriorityAdmin(admin.ModelAdmin):
+class CategoryAdmin(admin.ModelAdmin):
     inlines = [CategoryInline]
     search_fields = ['name']
 
 
-admin.site.register(Priority, PriorityAdmin)
+admin.site.register(Category, CategoryAdmin)
 admin.site.register(Expense)
