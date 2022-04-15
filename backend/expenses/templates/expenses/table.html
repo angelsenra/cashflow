@@ -1,0 +1,38 @@
+<style>
+  td,
+  th {
+    width: 4rem;
+    height: 2rem;
+    border: 1px solid #ccc;
+    text-align: center;
+  }
+
+  th {
+    background: lightblue;
+    border-color: white;
+  }
+
+  body {
+    padding: 1rem;
+  }
+</style>
+<table>
+  {% for header_row in header_rows %}
+  <tr>
+    {% if forloop.counter0 == 0 %}
+    <th rowspan="{{ header_rows|length }}"></th>
+    {% endif %}
+    {% for name, colspan, rowspan in header_row %}
+    <th colspan="{{ colspan }}" rowspan="{{ rowspan }}">{{ name }}</th>
+    {% endfor %}
+  </tr>
+  {% endfor %}
+  {% for value_header, value_row in value_rows %}
+  <tr>
+    <th>{{ value_header }}</th>
+    {% for value in value_row %}
+    <td>{{ value }}</td>
+    {% endfor %}
+  </tr>
+  {% endfor %}
+</table>
