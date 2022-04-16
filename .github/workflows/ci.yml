@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -42,7 +42,9 @@ jobs:
         with:
           linters: isort
           run: |
-            PIPENV_PIPFILE=backend/Pipfile pipenv run isort --diff $(git ls-files '*.py')
+            pipenv run isort --diff $(git ls-files '*.py')
+        env:
+          PIPENV_PIPFILE: backend/Pipfile
       - name: pylint
         run: |
           pipenv run pylint $(git ls-files '*.py')
