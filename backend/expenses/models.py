@@ -1,5 +1,6 @@
 import itertools
 import logging
+import secrets
 import typing
 import uuid
 
@@ -9,8 +10,13 @@ from django.db import models
 logger = logging.getLogger(__name__)
 
 
+def generate_public_id():
+    return secrets.token_urlsafe(9)
+
+
 class Category(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    public_id = models.CharField(unique=True, default=generate_public_id, max_length=50, editable=False)
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)
     name = models.CharField(max_length=200)
@@ -77,6 +83,7 @@ class Category(models.Model):
 
 class Expense(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    public_id = models.CharField(unique=True, default=generate_public_id, max_length=50, editable=False)
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)
     spent_at = models.DateTimeField()

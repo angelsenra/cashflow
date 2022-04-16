@@ -2,7 +2,7 @@ import datetime
 import typing
 
 from django.http import HttpRequest, HttpResponseRedirect
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
 
@@ -46,8 +46,8 @@ def list_(request: HttpRequest):
     return render(request, "expenses/list.html", context)
 
 
-def detail(request: HttpRequest):
-    expense = Expense.objects.order_by("spent_at").last()
+def detail(request: HttpRequest, expense_public_id: str):
+    expense = get_object_or_404(Expense, public_id=expense_public_id)
     if request.method == "POST":
         form = ExpenseForm(request.POST)
         if form.is_valid():
@@ -78,7 +78,7 @@ def create_expense(request: HttpRequest):
             new_expense.save()
             return HttpResponseRedirect(reverse("expenses:list"))
     else:
-        form = ExpenseForm()
+        form = ExpenseForm(initial=dict(spent_at=timezone.now()))
 
     return render(request, "expenses/detail.html", dict(form=form))
 
