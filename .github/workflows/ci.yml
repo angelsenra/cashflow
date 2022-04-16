@@ -22,7 +22,7 @@ jobs:
         run: |
           cd backend
           pipenv run black . --check --diff
-          pipenv run isort --diff -rc .
+          pipenv run isort --diff .
       - name: Run pylint
         run: |
           cd backend
