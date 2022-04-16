@@ -6,6 +6,7 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
 
+from expenses.forms import ExpenseForm
 from expenses.models import Category, Expense
 
 MONTHNAMES = [None, "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -43,6 +44,11 @@ def list_(request):
         periods_expenses.append(dict(period_name=period_start.strftime("%b %Y"), period_expenses=period_expenses))
     context = dict(periods_expenses=periods_expenses)
     return render(request, "expenses/list.html", context)
+
+
+def detail(request):
+    form = ExpenseForm(instance=Expense.objects.order_by("spent_at").last())
+    return render(request, "expenses/detail.html", dict(form=form))
 
 
 def _generate_header_rows() -> list[list[tuple[str, int, int, typing.Any]]]:
