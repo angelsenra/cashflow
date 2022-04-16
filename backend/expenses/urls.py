@@ -6,4 +6,5 @@ app_name = "expenses"
 urlpatterns = [
     path("", views.index, name="index"),
     path("table/", views.table, name="table"),
+    path("list/", views.list_, name="list"),
 ]

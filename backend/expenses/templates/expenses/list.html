@@ -1,0 +1,13 @@
+Hi! This is the list view
+
+<ul>
+  {% for when, amount, category, source, notes in value_rows %}
+  <li>
+    {{ when }}
+    {{ amount }}
+    {{ category }}
+    {{ source }}
+    {{ notes }}
+  </li>
+  {% endfor %}
+</ul>

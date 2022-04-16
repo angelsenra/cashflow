@@ -6,7 +6,7 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
 
-from expenses.models import Category
+from expenses.models import Category, Expense
 
 MONTHNAMES = [None, "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -16,9 +16,7 @@ def index(request):
 
 
 def table(request):
-    category_list = Category.objects.order_by("order").all()
     header_rows = _generate_header_rows()
-
     value_rows = list()
     periods = _generate_periods()
     for period_start, period_end in periods:
@@ -26,8 +24,18 @@ def table(request):
         values = Category.build_values(None, filter_=filter_)
         value_rows.append([f"{MONTHNAMES[period_start.month]}{period_start.year}", [value for value, _ in values]])
 
-    context = dict(category_list=category_list, header_rows=header_rows, value_rows=value_rows)
+    context = dict(header_rows=header_rows, value_rows=value_rows)
     return render(request, "expenses/table.html", context)
+
+
+def list_(request):
+    value_rows = list()
+    for expense in Expense.objects.all():
+        value_rows.append(
+            (expense.spent_at.isoformat(), expense.amount, expense.category.name, expense.source, expense.notes)
+        )
+    context = dict(value_rows=value_rows)
+    return render(request, "expenses/list.html", context)
 
 
 def _generate_header_rows() -> list[list[tuple[str, int, int, typing.Any]]]:
