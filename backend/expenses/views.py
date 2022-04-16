@@ -49,7 +49,10 @@ def list_(request: HttpRequest):
 def detail(request: HttpRequest, expense_public_id: str):
     expense = get_object_or_404(Expense, public_id=expense_public_id)
     if request.method == "POST":
-        form = ExpenseForm(request.POST)
+        form = ExpenseForm(request.POST, can_delete=True)
+        if form.data.get("delete") == "Delete":
+            expense.delete()
+            return HttpResponseRedirect(reverse("expenses:list"))
         if form.is_valid():
             expense.spent_at = form.cleaned_data["spent_at"]
             expense.amount = form.cleaned_data["amount"]
@@ -59,14 +62,14 @@ def detail(request: HttpRequest, expense_public_id: str):
             expense.save()
             return HttpResponseRedirect(reverse("expenses:list"))
     else:
-        form = ExpenseForm(instance=expense)
+        form = ExpenseForm(instance=expense, can_delete=True)
 
     return render(request, "expenses/detail.html", dict(form=form))
 
 
 def create_expense(request: HttpRequest):
     if request.method == "POST":
-        form = ExpenseForm(request.POST)
+        form = ExpenseForm(request.POST, can_delete=False)
         if form.is_valid():
             new_expense = Expense(
                 spent_at=form.cleaned_data["spent_at"],
@@ -78,7 +81,7 @@ def create_expense(request: HttpRequest):
             new_expense.save()
             return HttpResponseRedirect(reverse("expenses:list"))
     else:
-        form = ExpenseForm(initial=dict(spent_at=timezone.now()))
+        form = ExpenseForm(initial=dict(spent_at=timezone.now()), can_delete=False)
 
     return render(request, "expenses/detail.html", dict(form=form))
 
