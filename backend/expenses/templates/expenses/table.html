@@ -25,7 +25,7 @@
   </thead>
   {% for value_header, value_row in value_rows %}
   <tr>
-    <th>{{ value_header }}</th>
+    <th><a href="{% url 'expenses:list' %}">{{ value_header }}</a></th>
     {% for value in value_row %}
     <td class="text-right" style="font-size: 1rem; font-family: ui-monospace;">{{ value }}</td>
     {% endfor %}

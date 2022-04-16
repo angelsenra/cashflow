@@ -12,9 +12,5 @@
   </ol>
 </nav>
 
-<form>
-  {{ form|crispy }}
-  <button type="cancel" class="btn btn-danger">Cancel</button>
-  <button type="submit" class="btn btn-primary">Save</button>
-</form>
+{% crispy form %}
 {% endblock %}

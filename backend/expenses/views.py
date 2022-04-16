@@ -1,7 +1,7 @@
 import datetime
 import typing
 
-from django.http import HttpResponseRedirect
+from django.http import HttpRequest, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
@@ -12,11 +12,11 @@ from expenses.models import Category, Expense
 MONTHNAMES = [None, "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 
-def index(request):
+def index(request: HttpRequest):
     return HttpResponseRedirect(reverse("expenses:table"))
 
 
-def table(request):
+def table(request: HttpRequest):
     header_rows = _generate_header_rows()
     value_rows = list()
     periods = _generate_periods(amount=6)
@@ -29,7 +29,7 @@ def table(request):
     return render(request, "expenses/table.html", context)
 
 
-def list_(request):
+def list_(request: HttpRequest):
     periods_expenses = list()
     periods = _generate_periods(amount=6)
     for period_start, period_end in periods:
@@ -46,8 +46,40 @@ def list_(request):
     return render(request, "expenses/list.html", context)
 
 
-def detail(request):
-    form = ExpenseForm(instance=Expense.objects.order_by("spent_at").last())
+def detail(request: HttpRequest):
+    expense = Expense.objects.order_by("spent_at").last()
+    if request.method == "POST":
+        form = ExpenseForm(request.POST)
+        if form.is_valid():
+            expense.spent_at = form.cleaned_data["spent_at"]
+            expense.amount = form.cleaned_data["amount"]
+            expense.source = form.cleaned_data["source"]
+            expense.category = form.cleaned_data["category"]
+            expense.notes = form.cleaned_data["notes"]
+            expense.save()
+            return HttpResponseRedirect(reverse("expenses:list"))
+    else:
+        form = ExpenseForm(instance=expense)
+
+    return render(request, "expenses/detail.html", dict(form=form))
+
+
+def create_expense(request: HttpRequest):
+    if request.method == "POST":
+        form = ExpenseForm(request.POST)
+        if form.is_valid():
+            new_expense = Expense(
+                spent_at=form.cleaned_data["spent_at"],
+                amount=form.cleaned_data["amount"],
+                source=form.cleaned_data["source"],
+                category=form.cleaned_data["category"],
+                notes=form.cleaned_data["notes"],
+            )
+            new_expense.save()
+            return HttpResponseRedirect(reverse("expenses:list"))
+    else:
+        form = ExpenseForm()
+
     return render(request, "expenses/detail.html", dict(form=form))
 
 
