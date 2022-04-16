@@ -53,10 +53,16 @@ jobs:
           pip install --user pipenv
           pipenv sync --dev --system
         working-directory: backend
+      - name: isort-without-cd
+        uses: liskin/gh-problem-matcher-wrap@v1
+        with:
+          linters: isort
+          run: isort --check --diff $(git ls-files '*.py')
       - name: isort
-        run: |
-          isort --diff $(git ls-files '*.py')
-        working-directory: backend
+        uses: liskin/gh-problem-matcher-wrap@v1
+        with:
+          linters: isort
+          run: cd backend && isort --check --diff $(git ls-files '*.py')
   pylint:
     runs-on: ubuntu-latest
     steps:
