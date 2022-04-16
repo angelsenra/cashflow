@@ -31,30 +31,23 @@ jobs:
         run: |
           cd backend
           pip install --user pipenv
-          pipenv sync --dev
+          pipenv sync --dev --system
       - name: black
         run: |
-          pipenv run black --check --diff $(git ls-files '*.py')
-        env:
-          PIPENV_PIPFILE: backend/Pipfile
+          black --check --diff $(git ls-files '*.py')
       - name: isort
         uses: liskin/gh-problem-matcher-wrap@v1
         with:
           linters: isort
           run: |
-            pipenv run isort --diff $(git ls-files '*.py')
-        env:
-          PIPENV_PIPFILE: backend/Pipfile
+            isort --diff $(git ls-files '*.py')
       - name: pylint
         run: |
-          pipenv run pylint $(git ls-files '*.py')
-        env:
-          PIPENV_PIPFILE: backend/Pipfile
+          pylint $(git ls-files '*.py')
       - name: mypy
         uses: liskin/gh-problem-matcher-wrap@v1
         with:
           linters: mypy
           run: |
-            pipenv run mypy $(git ls-files '*.py')
-        env:
-          PIPENV_PIPFILE: backend/Pipfile
+            mypy $(git ls-files '*.py')
+    continue-on-error: true
