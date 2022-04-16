@@ -22,7 +22,9 @@ def table(request):
     for period_start, period_end in periods:
         filter_ = dict(spent_at__gte=period_start, spent_at__lte=period_end)
         values = Category.build_values(None, filter_=filter_)
-        value_rows.append([f"{MONTHNAMES[period_start.month]}{period_start.year}", [value for value, _ in values]])
+        value_rows.append(
+            [f"{MONTHNAMES[period_start.month]}{period_start.year}", ["%.2f€" % value for value, _ in values]]
+        )
 
     context = dict(header_rows=header_rows, value_rows=value_rows)
     return render(request, "expenses/table.html", context)
@@ -48,7 +50,7 @@ def _generate_header_rows() -> list[list[tuple[str, int, int, typing.Any]]]:
         for category, has_children in level:
             parent = category.parent
             if parent and parent not in parents_considered:
-                header_row.append(("Total", 1, levels_left, parent.color))
+                header_row.append(("∑", 1, levels_left, parent.color))
 
             if has_children:
                 columns_under_category = sum(
