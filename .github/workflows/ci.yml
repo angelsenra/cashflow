@@ -30,8 +30,10 @@ jobs:
           ls -la
           pipenv sync
           echo "Installed pipenv requirements."
+          pipenv run pip freeze
       - name: Run Linting
         run: |
+          pipenv install
           pipenv run black . --check --diff
           echo "Ran black."
           pipenv run isort --diff -rc .
