@@ -21,7 +21,16 @@ class ExpenseForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.form_method = "post"
-        self.helper.add_input(Button("cancel", "Cancel", onclick="window.history.back()"))
+        self.helper.add_input(
+            Button("cancel", "Cancel", css_class="btn btn-secondary", onclick="window.history.back()")
+        )
         self.helper.add_input(Submit("submit", "Save"))
         if can_delete:
-            self.helper.add_input(Button("delete", "Delete", **{"data-toggle": "modal", "data-target": "#deleteModal"}))
+            self.helper.add_input(
+                Button(
+                    "delete",
+                    "Delete",
+                    css_class="btn btn-danger",
+                    **{"data-toggle": "modal", "data-target": "#deleteModal"},
+                )
+            )
