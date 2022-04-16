@@ -1,38 +1,35 @@
-<style>
-  td,
-  th {
-    width: 4rem;
-    height: 2rem;
-    border: 1px solid #ccc;
-    text-align: center;
-  }
+{% extends "expenses/base_bootstrap.html" %}
 
-  th {
-    background: lightblue;
-    border-color: white;
-  }
+{% block title %}My amazing table{% endblock %}
 
-  body {
-    padding: 1rem;
-  }
-</style>
-<table>
-  {% for header_row in header_rows %}
-  <tr>
-    {% if forloop.counter0 == 0 %}
-    <th rowspan="{{ header_rows|length }}"></th>
-    {% endif %}
-    {% for name, colspan, rowspan, color in header_row %}
-    <th colspan="{{ colspan }}" rowspan="{{ rowspan }}" style="background: {{ color }}">{{ name }}</th>
+{% block content %}
+<nav>
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'expenses:list' %}">Home</a></li>
+    <li class="breadcrumb-item active">Table</li>
+  </ol>
+</nav>
+
+<table class="table table-sm table-striped table-bordered">
+  <thead class="thead-light">
+    {% for header_row in header_rows %}
+    <tr>
+      {% if forloop.counter0 == 0 %}
+      <th rowspan="{{ header_rows|length }}"></th>
+      {% endif %}
+      {% for name, colspan, rowspan, color in header_row %}
+      <th colspan="{{ colspan }}" rowspan="{{ rowspan }}" style="background: {{ color }}40">{{ name }}</th>
+      {% endfor %}
+    </tr>
     {% endfor %}
-  </tr>
-  {% endfor %}
+  </thead>
   {% for value_header, value_row in value_rows %}
   <tr>
-    <th>{{ value_header }}</th>
+    <th><a href="{% url 'expenses:list' %}">{{ value_header }}</a></th>
     {% for value in value_row %}
-    <td>{{ value }}</td>
+    <td class="text-right" style="font-size: 1rem; font-family: ui-monospace;">{{ value }}</td>
     {% endfor %}
   </tr>
   {% endfor %}
 </table>
+{% endblock %}
