@@ -33,7 +33,10 @@ jobs:
           pipenv run pip freeze
       - name: Run Linting
         run: |
+          cd backend
+          pipenv run pip freeze
           pipenv install
+          pipenv run pip freeze
           pipenv run black . --check --diff
           echo "Ran black."
           pipenv run isort --diff -rc .
