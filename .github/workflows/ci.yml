@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  pull_request:
+    paths-ignore:
+      - '*.md'
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '*.md'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    strategy:
+      matrix:
+        command:
+          - black
+          - isort
+          - pylint
+          - mypy
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+      - name: Install python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.10.3
+          cache: 'pipenv'
+          cache-dependency-path: |
+            backend/Pipfile.lock
+      - name: Install Python dependencies
+        run: |
+          pip install --user pipenv
+          pipenv sync --dev --system
+        working-directory: backend
+      - name: black
+        if: ${{ matrix.command == 'black' }}
+        run: |
+          black --check --diff $(git ls-files '*.py')
+        working-directory: backend
+      - name: isort
+        if: ${{ matrix.command == 'isort' }}
+        run: |
+          isort --check --diff $(git ls-files '*.py')
+        working-directory: backend
+      - name: pylint
+        if: ${{ matrix.command == 'pylint' }}
+        run: |
+          pylint $(git ls-files '*.py')
+        working-directory: backend
+      - name: mypy
+        if: ${{ matrix.command == 'mypy' }}
+        run: |
+          mypy $(git ls-files '*.py')
+        working-directory: backend

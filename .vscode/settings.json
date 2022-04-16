@@ -1,0 +1,38 @@
+{
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/*.pyc": true,
+        "**/__pycache__": true
+    },
+    "python.analysis.indexing": true,
+    "python.formatting.provider": "black",
+    "python.linting.cwd": "${workspaceFolder}/backend",
+    "python.linting.enabled": true,
+    "python.linting.lintOnSave": true,
+    "python.linting.mypyEnabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.linting.pylintArgs": [
+        "--rcfile=${workspaceFolder}/backend/pylintrc"
+    ],
+    "python.pythonPath": "~/.pyenv/versions/3.10.3/bin/python",
+    "python.sortImports.args": [
+        "--settings-path=${workspaceFolder}/backend/.isort.cfg"
+    ],
+    "[python]": {
+        "editor.rulers": [
+            120
+        ],
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true,
+        },
+        "editor.formatOnSave": true,
+    },
+    "[json]": {
+        "editor.formatOnSave": true,
+    },
+    "files.trimTrailingWhitespace": true,
+}

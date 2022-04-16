@@ -1,0 +1,20 @@
+[tool.black]
+line-length = 120
+target_version = ['py310']
+exclude = '''
+
+(
+  /(
+      \.git
+    | \.pytest_cache
+    | \.mypy_cache
+  )/
+)
+'''
+
+[tool.mypy]
+plugins = ["mypy_django_plugin.main"]
+ignore_missing_imports = "True"
+
+[tool.django-stubs]
+django_settings_module = "cashflow.settings"
