@@ -18,25 +18,30 @@ def index(request):
 def table(request):
     header_rows = _generate_header_rows()
     value_rows = list()
-    periods = _generate_periods()
+    periods = _generate_periods(amount=6)
     for period_start, period_end in periods:
         filter_ = dict(spent_at__gte=period_start, spent_at__lte=period_end)
         values = Category.build_values(None, filter_=filter_)
-        value_rows.append(
-            [f"{MONTHNAMES[period_start.month]}{period_start.year}", ["%.2f€" % value for value, _ in values]]
-        )
+        value_rows.append([period_start.strftime("%b %Y"), ["%.2f€" % value for value, _ in values]])
 
     context = dict(header_rows=header_rows, value_rows=value_rows)
     return render(request, "expenses/table.html", context)
 
 
 def list_(request):
-    value_rows = list()
-    for expense in Expense.objects.all():
-        value_rows.append(
-            (expense.spent_at.isoformat(), expense.amount, expense.category.name, expense.source, expense.notes)
+    periods_expenses = list()
+    periods = _generate_periods(amount=6)
+    for period_start, period_end in periods:
+        expenses = (
+            Expense.objects.filter(spent_at__gte=period_start, spent_at__lte=period_end).order_by("spent_at").all()
         )
-    context = dict(value_rows=value_rows)
+        if not expenses:
+            continue
+        period_expenses = list()
+        for a, expense in enumerate(expenses):
+            period_expenses.append(dict(number=a + 1, expense=expense, expense_amount="%.2f€" % expense.amount))
+        periods_expenses.append(dict(period_name=period_start.strftime("%b %Y"), period_expenses=period_expenses))
+    context = dict(periods_expenses=periods_expenses)
     return render(request, "expenses/list.html", context)
 
 
@@ -69,13 +74,14 @@ def _generate_header_rows() -> list[list[tuple[str, int, int, typing.Any]]]:
     return header_rows
 
 
-def _generate_periods() -> list[tuple[datetime.datetime, datetime.datetime]]:
+def _generate_periods(*, amount: int) -> list[tuple[datetime.datetime, datetime.datetime]]:
     now = timezone.now()
     month_total = now.month - 1 + now.year * 12
     return [
-        (
-            datetime.datetime(year=(month_total - i) // 12, month=(month_total - i) % 12 + 1, day=1),
-            datetime.datetime(year=(month_total - i + 1) // 12, month=(month_total - i + 1) % 12 + 1, day=1),
-        )
-        for i in range(5, -1, -1)
+        (_get_datetime_from_month_total(month_total - i), _get_datetime_from_month_total(month_total - i + 1))
+        for i in range(amount - 1, -1, -1)
     ]
+
+
+def _get_datetime_from_month_total(month_total: int, /):
+    return datetime.datetime(year=month_total // 12, month=month_total % 12 + 1, day=1)
