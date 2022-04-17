@@ -40,20 +40,23 @@ AUTHENTICATION_BACKENDS = [
 # Application definition
 
 INSTALLED_APPS = [
+    "django.contrib.admin",
     "django.contrib.auth",
+    "django.contrib.contenttypes",
     "django.contrib.messages",
+    "django.contrib.sessions",
     "django.contrib.sites",
-    "allauth",
+    "django.contrib.staticfiles",
+    # Third parties (other than django)
     "allauth.account",
     "allauth.socialaccount",
+    "allauth",
     "colorfield",
-    "expenses.apps.ExpensesConfig",
-    "polls.apps.PollsConfig",
-    "django.contrib.admin",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.staticfiles",
     "crispy_forms",
+    # Local apps
+    "auth",
+    "expenses",
+    "polls",
 ]
 
 MIDDLEWARE = [
@@ -144,3 +147,4 @@ CRISPY_FAIL_SILENTLY = not DEBUG
 
 SITE_ID = 1
 LOGIN_REDIRECT_URL = "expenses:home"
+AUTH_USER_MODEL = "custom_auth.User"
