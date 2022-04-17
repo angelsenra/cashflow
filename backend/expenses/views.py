@@ -13,7 +13,8 @@ from expenses.models import Category, Expense, Project
 
 @login_required
 def project_list(request: HttpRequest):
-    return render(request, "expenses/project_list.html", dict())
+    projects = sorted(request.user.projects.all(), key=lambda p: p.order)
+    return render(request, "expenses/project_list.html", dict(projects=projects))
 
 
 @login_required
@@ -35,26 +36,31 @@ def project_create(request: HttpRequest):
 
 
 @login_required
-def table(request: HttpRequest):
+def project_detail(request: HttpRequest, project_public_id: str):
+    project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
     header_rows = _generate_header_rows()
     value_rows = list()
     periods = _generate_periods(amount=6)
     for period_start, period_end in periods:
-        filter_ = dict(spent_at__gte=period_start, spent_at__lte=period_end)
+        filter_ = dict(spent_at__gte=period_start, spent_at__lte=period_end, project=project)
         values = Category.build_values(None, filter_=filter_)
         value_rows.append([period_start.strftime("%b %Y"), ["%.2f€" % value for value, _ in values]])
 
-    context = dict(header_rows=header_rows, value_rows=value_rows)
-    return render(request, "expenses/table.html", context)
+    return render(
+        request, "expenses/project_detail.html", dict(header_rows=header_rows, value_rows=value_rows, project=project)
+    )
 
 
 @login_required
-def list_(request: HttpRequest):
+def expense_list(request: HttpRequest, project_public_id: str):
+    project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
     periods_expenses = list()
     periods = _generate_periods(amount=6)
     for period_start, period_end in periods:
         expenses = (
-            Expense.objects.filter(spent_at__gte=period_start, spent_at__lte=period_end).order_by("spent_at").all()
+            Expense.objects.filter(spent_at__gte=period_start, spent_at__lte=period_end, category__project=project)
+            .order_by("spent_at")
+            .all()
         )
         if not expenses:
             continue
@@ -62,18 +68,19 @@ def list_(request: HttpRequest):
         for a, expense in enumerate(expenses):
             period_expenses.append(dict(number=a + 1, expense=expense, expense_amount="%.2f€" % expense.amount))
         periods_expenses.append(dict(period_name=period_start.strftime("%b %Y"), period_expenses=period_expenses))
-    context = dict(periods_expenses=periods_expenses)
-    return render(request, "expenses/list.html", context)
+
+    return render(request, "expenses/expense_list.html", dict(periods_expenses=periods_expenses, project=project))
 
 
 @login_required
-def detail(request: HttpRequest, expense_public_id: str):
-    expense = get_object_or_404(Expense, public_id=expense_public_id)
+def expense_detail(request: HttpRequest, project_public_id: str, expense_public_id: str):
+    project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
+    expense = get_object_or_404(Expense, public_id=expense_public_id, category__project=project)
     if request.method == "POST":
         form = ExpenseForm(request.POST, can_delete=True)
         if form.data.get("delete") == "Delete":
             expense.delete()
-            return HttpResponseRedirect(reverse("expenses:list"))
+            return HttpResponseRedirect(reverse("expenses:expense_list", project_public_id=project.public_id))
         if form.is_valid():
             expense.spent_at = form.cleaned_data["spent_at"]
             expense.amount = form.cleaned_data["amount"]
@@ -81,15 +88,16 @@ def detail(request: HttpRequest, expense_public_id: str):
             expense.category = form.cleaned_data["category"]
             expense.notes = form.cleaned_data["notes"]
             expense.save()
-            return HttpResponseRedirect(reverse("expenses:list"))
+            return HttpResponseRedirect(reverse("expenses:expense_list", project_public_id=project.public_id))
     else:
         form = ExpenseForm(instance=expense, can_delete=True)
 
-    return render(request, "expenses/detail.html", dict(form=form))
+    return render(request, "expenses/expense_detail.html", dict(form=form, project=project))
 
 
 @login_required
-def create_expense(request: HttpRequest):
+def expense_create(request: HttpRequest, project_public_id: str):
+    project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
     if request.method == "POST":
         form = ExpenseForm(request.POST, can_delete=False)
         if form.is_valid():
@@ -101,11 +109,11 @@ def create_expense(request: HttpRequest):
                 notes=form.cleaned_data["notes"],
             )
             new_expense.save()
-            return HttpResponseRedirect(reverse("expenses:list"))
+            return HttpResponseRedirect(reverse("expenses:expense_list", project_public_id=project.public_id))
     else:
         form = ExpenseForm(initial=dict(spent_at=timezone.now()), can_delete=False)
 
-    return render(request, "expenses/detail.html", dict(form=form))
+    return render(request, "expenses/expense_detail.html", dict(form=form, project=project))
 
 
 def _generate_header_rows() -> list[list[tuple[str, int, int, typing.Any]]]:

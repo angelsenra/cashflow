@@ -1,12 +1,10 @@
 {% extends "expenses/base_bootstrap.html" %}
 
-{% block title %}My amazing table{% endblock %}
-
 {% block content %}
 <nav>
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{% url 'expenses:list' %}">Home</a></li>
-    <li class="breadcrumb-item active">Table</li>
+    <li class="breadcrumb-item"><a href="{% url 'expenses:project_list' %}">Projects</a></li>
+    <li class="breadcrumb-item active">Overview</li>
     <form class="ml-auto" action="{% url 'account_logout' %}" method="post">
       {% csrf_token %}
       <input type="submit" class="btn btn-sm btn-danger" name="logout" value="Logout">
@@ -29,7 +27,7 @@
   </thead>
   {% for value_header, value_row in value_rows %}
   <tr>
-    <th><a href="{% url 'expenses:list' %}">{{ value_header }}</a></th>
+    <th><a href="{% url 'expenses:expense_list' project.public_id %}">{{ value_header }}</a></th>
     {% for value in value_row %}
     <td class="text-right" style="font-size: 1rem; font-family: ui-monospace;">{{ value }}</td>
     {% endfor %}
