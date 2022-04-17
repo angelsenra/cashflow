@@ -1,6 +1,7 @@
 import datetime
 import typing
 
+from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
@@ -12,10 +13,12 @@ from expenses.models import Category, Expense
 MONTHNAMES = [None, "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 
+@login_required
 def index(request: HttpRequest):
     return HttpResponseRedirect(reverse("expenses:table"))
 
 
+@login_required
 def table(request: HttpRequest):
     header_rows = _generate_header_rows()
     value_rows = list()
@@ -29,6 +32,7 @@ def table(request: HttpRequest):
     return render(request, "expenses/table.html", context)
 
 
+@login_required
 def list_(request: HttpRequest):
     periods_expenses = list()
     periods = _generate_periods(amount=6)
@@ -46,6 +50,7 @@ def list_(request: HttpRequest):
     return render(request, "expenses/list.html", context)
 
 
+@login_required
 def detail(request: HttpRequest, expense_public_id: str):
     expense = get_object_or_404(Expense, public_id=expense_public_id)
     if request.method == "POST":
@@ -67,6 +72,7 @@ def detail(request: HttpRequest, expense_public_id: str):
     return render(request, "expenses/detail.html", dict(form=form))
 
 
+@login_required
 def create_expense(request: HttpRequest):
     if request.method == "POST":
         form = ExpenseForm(request.POST, can_delete=False)

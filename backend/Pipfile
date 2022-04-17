@@ -8,6 +8,7 @@ django = "*"
 django-colorfield = "*"
 django-stubs = "*"
 django-crispy-forms = "*"
+django-allauth = "*"
 
 [dev-packages]
 black = "*"
