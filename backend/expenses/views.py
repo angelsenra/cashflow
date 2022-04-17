@@ -7,13 +7,31 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
 
-from expenses.forms import ExpenseForm
-from expenses.models import Category, Expense
+from expenses.forms import ExpenseForm, ProjectCreateForm
+from expenses.models import Category, Expense, Project
 
 
 @login_required
 def project_list(request: HttpRequest):
     return render(request, "expenses/project_list.html", dict())
+
+
+@login_required
+def project_create(request: HttpRequest):
+    if request.method == "POST":
+        form = ProjectCreateForm(request.POST)
+        if form.is_valid():
+            new_project = Project(
+                user=request.user,
+                name=form.cleaned_data["name"],
+                notes=form.cleaned_data["notes"],
+            )
+            new_project.save()
+            return HttpResponseRedirect(reverse("expenses:project_list"))
+    else:
+        form = ProjectCreateForm()
+
+    return render(request, "expenses/project_create.html", dict(form=form))
 
 
 @login_required

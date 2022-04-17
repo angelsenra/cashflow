@@ -1,9 +1,12 @@
 {% extends "expenses/base_bootstrap.html" %}
 
+{% load crispy_forms_tags %}
+
 {% block content %}
 <nav>
   <ol class="breadcrumb">
-    <li class="breadcrumb-item active">Projects</li>
+    <li class="breadcrumb-item">Projects</li>
+    <li class="breadcrumb-item active">Create</li>
     <form class="ml-auto" action="{% url 'account_logout' %}" method="post">
       {% csrf_token %}
       <input type="submit" class="btn btn-sm btn-danger" name="logout" value="Logout">
@@ -11,7 +14,5 @@
   </ol>
 </nav>
 
-<br>
-<a class="btn btn-primary" href="{% url 'expenses:project_create' %}" role="button">Create a new project</a>
-<br>
+{% crispy form %}
 {% endblock %}

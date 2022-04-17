@@ -2,11 +2,26 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Button, Submit
 from django import forms
 
-from expenses.models import Expense
+from expenses.models import Expense, Project
 
 
 class DatetimeLocalInput(forms.DateTimeInput):
     input_type = "datetime-local"
+
+
+class ProjectCreateForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ["name", "notes"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = "post"
+        self.helper.add_input(
+            Button("cancel", "Cancel", css_class="btn btn-secondary", onclick="window.history.back()")
+        )
+        self.helper.add_input(Submit("submit", "Create"))
 
 
 class ExpenseForm(forms.ModelForm):
