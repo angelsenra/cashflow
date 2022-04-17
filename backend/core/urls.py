@@ -1,4 +1,4 @@
-"""cashflow URL Configuration
+"""URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/4.0/topics/http/urls/
@@ -14,9 +14,13 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
+admin.site.login = login_required(admin.site.login)
+
 urlpatterns = [
+    path("accounts/", include("allauth.urls")),
     path("", include("expenses.urls")),
     path("polls/", include("polls.urls")),
     path("admin/", admin.site.urls),
