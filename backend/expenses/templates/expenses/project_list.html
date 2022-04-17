@@ -1,0 +1,13 @@
+{% extends "expenses/base_bootstrap.html" %}
+
+{% block content %}
+<nav>
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item active">Projects</li>
+    <form class="ml-auto" action="{% url 'account_logout' %}" method="post">
+      {% csrf_token %}
+      <input type="submit" class="btn btn-sm btn-danger" name="logout" value="Logout">
+    </form>
+  </ol>
+</nav>
+{% endblock %}

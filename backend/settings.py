@@ -146,5 +146,4 @@ CRISPY_TEMPLATE_PACK = "bootstrap4"
 CRISPY_FAIL_SILENTLY = not DEBUG
 
 SITE_ID = 1
-LOGIN_REDIRECT_URL = "expenses:home"
 AUTH_USER_MODEL = "custom_auth.User"

@@ -20,8 +20,9 @@ from django.urls import include, path
 admin.site.login = login_required(admin.site.login)
 
 urlpatterns = [
+    path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),
+    path("accounts/", include("auth.urls")),
     path("", include("expenses.urls")),
     path("polls/", include("polls.urls")),
-    path("admin/", admin.site.urls),
 ]

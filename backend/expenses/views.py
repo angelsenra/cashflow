@@ -10,12 +10,10 @@ from django.utils import timezone
 from expenses.forms import ExpenseForm
 from expenses.models import Category, Expense
 
-MONTHNAMES = [None, "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
 
 @login_required
-def index(request: HttpRequest):
-    return HttpResponseRedirect(reverse("expenses:table"))
+def project_list(request: HttpRequest):
+    return render(request, "expenses/project_list.html", dict())
 
 
 @login_required
