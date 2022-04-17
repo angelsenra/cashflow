@@ -1,28 +1,32 @@
 import itertools
 import logging
-import secrets
 import typing
-import uuid
 
 from colorfield.fields import ColorField
 from django.db import models
 
+from auth.models import User
+from helpers.models import BaseModel, generate_order
+
 logger = logging.getLogger(__name__)
 
 
-def generate_public_id():
-    return secrets.token_urlsafe(9)
-
-
-class Category(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    public_id = models.CharField(unique=True, default=generate_public_id, max_length=50, editable=False)
-    created_at = models.DateTimeField(auto_now=True)
-    updated_at = models.DateTimeField(auto_now_add=True)
+class Project(BaseModel):
+    user = models.ForeignKey(User, related_name="projects", on_delete=models.CASCADE)
     name = models.CharField(max_length=200)
-    order = models.IntegerField()
+    order = models.IntegerField(default=generate_order)
+    notes = models.CharField(max_length=1000, blank=True, null=True)
+
+
+class Category(BaseModel):
+    project = models.ForeignKey(Project, related_name="categories", on_delete=models.CASCADE)
+    name = models.CharField(max_length=200)
+    order = models.IntegerField(default=generate_order)
     color = ColorField(default="#FF0000")
     parent = models.ForeignKey("self", related_name="children", null=True, blank=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        verbose_name_plural = "categories"
 
     def __str__(self):
         if self.parent:
@@ -81,15 +85,11 @@ class Category(models.Model):
         ]
 
 
-class Expense(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    public_id = models.CharField(unique=True, default=generate_public_id, max_length=50, editable=False)
-    created_at = models.DateTimeField(auto_now=True)
-    updated_at = models.DateTimeField(auto_now_add=True)
+class Expense(BaseModel):
+    category = models.ForeignKey(Category, related_name="expenses", on_delete=models.CASCADE)
     spent_at = models.DateTimeField()
     amount = models.FloatField()
     source = models.CharField(max_length=200)
-    category = models.ForeignKey(Category, related_name="expenses", on_delete=models.CASCADE)
     notes = models.CharField(max_length=1000, blank=True, null=True)
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL)
 

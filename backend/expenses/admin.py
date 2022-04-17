@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Category, Expense
+from expenses.models import Category, Expense, Project
 
 
 class CategoryInline(admin.TabularInline):
@@ -13,5 +13,6 @@ class CategoryAdmin(admin.ModelAdmin):
     search_fields = ["name"]
 
 
+admin.site.register(Project)
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(Expense)
