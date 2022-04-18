@@ -17,6 +17,9 @@ class Project(BaseModel):
     order = models.IntegerField(default=generate_order)
     notes = models.CharField(max_length=1000, blank=True, null=True)
 
+    def __str__(self):
+        return f"Project {self.public_id}: {self.name}"
+
 
 class Category(BaseModel):
     project = models.ForeignKey(Project, related_name="categories", on_delete=models.CASCADE)
@@ -30,18 +33,20 @@ class Category(BaseModel):
 
     def __str__(self):
         if self.parent:
-            return f"{self.name} (child of {self.parent.name})"
+            return f"Category {self.name} (child of {self.parent.name})"
         else:
-            return f"{self.name}"
+            return f"Category {self.name}"
 
-    def build_levels(self: typing.Union["Category", None], iteration=0) -> list[list[tuple["Category", bool]]]:
+    def build_levels(
+        self: typing.Union["Category", None], iteration=0, project=None
+    ) -> list[list[tuple["Category", bool]]]:
         if iteration > 50:
             raise Exception(
                 f"We hit 50 iterations on the recursive levels call. There might be something wrong with {self}"
             )
 
         if self is None:
-            children = Category.objects.filter(parent=None).all()
+            children = Category.objects.filter(parent=None, project=project).all()
             levels = list()
         else:
             children = self.children.all()
@@ -55,7 +60,9 @@ class Category(BaseModel):
                 levels.append(list(itertools.chain(*list_of_each_level)))
         return levels
 
-    def build_values(self: typing.Union["Category", None], iteration=0, filter_=None) -> list[tuple[float, bool]]:
+    def build_values(
+        self: typing.Union["Category", None], iteration=0, filter_=None, project=None
+    ) -> list[tuple[float, bool]]:
         if filter_ is None:
             filter_ = dict()
         if iteration > 50:
@@ -64,7 +71,7 @@ class Category(BaseModel):
             )
 
         if self is None:
-            children = Category.objects.filter(parent=None).all()
+            children = Category.objects.filter(parent=None, project=project).all()
             other = 0.0
         else:
             children = self.children.all()
@@ -94,4 +101,4 @@ class Expense(BaseModel):
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
-        return f"${self.amount} at {self.source} on {self.spent_at} ({self.category})"
+        return f"Expense ${self.amount} at {self.source} on {self.spent_at} ({self.category})"

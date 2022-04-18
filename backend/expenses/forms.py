@@ -14,6 +14,8 @@ class ProjectCreateForm(forms.ModelForm):
         model = Project
         fields = ["name", "notes"]
 
+    category_template = forms.ChoiceField(choices=[("standard", "Standard")])
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()

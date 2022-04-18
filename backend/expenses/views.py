@@ -1,4 +1,5 @@
 import datetime
+import logging
 import typing
 
 from django.contrib.auth.decorators import login_required
@@ -9,6 +10,8 @@ from django.utils import timezone
 
 from expenses.forms import ExpenseForm, ProjectCreateForm
 from expenses.models import Category, Expense, Project
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -28,6 +31,10 @@ def project_create(request: HttpRequest):
                 notes=form.cleaned_data["notes"],
             )
             new_project.save()
+
+            category_template = form.cleaned_data["category_template"]
+            _create_categories_from_template(category_template, project=new_project)
+
             return HttpResponseRedirect(reverse("expenses:project_list"))
     else:
         form = ProjectCreateForm()
@@ -38,12 +45,12 @@ def project_create(request: HttpRequest):
 @login_required
 def project_detail(request: HttpRequest, project_public_id: str):
     project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
-    header_rows = _generate_header_rows()
+    header_rows = _generate_header_rows(project=project)
     value_rows = list()
     periods = _generate_periods(amount=6)
     for period_start, period_end in periods:
-        filter_ = dict(spent_at__gte=period_start, spent_at__lte=period_end, project=project)
-        values = Category.build_values(None, filter_=filter_)
+        filter_ = dict(spent_at__gte=period_start, spent_at__lte=period_end)
+        values = Category.build_values(None, filter_=filter_, project=project)
         value_rows.append([period_start.strftime("%b %Y"), ["%.2f€" % value for value, _ in values]])
 
     return render(
@@ -116,8 +123,8 @@ def expense_create(request: HttpRequest, project_public_id: str):
     return render(request, "expenses/expense_detail.html", dict(form=form, project=project))
 
 
-def _generate_header_rows() -> list[list[tuple[str, int, int, typing.Any]]]:
-    levels = Category.build_levels(None)
+def _generate_header_rows(project: Project) -> list[list[tuple[str, int, int, typing.Any]]]:
+    levels = Category.build_levels(None, project=project)
     parents_considered = list()
     header_rows = list()
     for a, level in enumerate(levels):
@@ -143,6 +150,28 @@ def _generate_header_rows() -> list[list[tuple[str, int, int, typing.Any]]]:
                     header_row.append(("Other", 1, levels_left, parent.color))
         header_rows.append(header_row)
     return header_rows
+
+
+def _create_categories_from_template(category_template: str, /, *, project: Project):
+    BLUE = "#247BA0"
+    GREEN = "#70C1B3"
+    GREY = "#50514F"
+    RED = "#F25F5C"
+    YELLOW = "#FFE066"
+
+    if category_template == "standard":
+        income = Category(project=project, name="Income", color=GREEN)
+        income.save()
+        mandatory = Category(project=project, name="Mandatory", color=RED)
+        mandatory.save()
+        prioritary = Category(project=project, name="Prioritary", color=BLUE)
+        prioritary.save()
+        discretionary = Category(project=project, name="Discretionary", color=YELLOW)
+        discretionary.save()
+        investments = Category(project=project, name="Investments", color=GREY)
+        investments.save()
+    else:
+        raise NotImplementedError(f"{category_template=}")
 
 
 def _generate_periods(*, amount: int) -> list[tuple[datetime.datetime, datetime.datetime]]:
