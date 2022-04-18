@@ -84,10 +84,12 @@ def expense_detail(request: HttpRequest, project_public_id: str, expense_public_
     project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
     expense = get_object_or_404(Expense, public_id=expense_public_id, category__project=project)
     if request.method == "POST":
-        form = ExpenseForm(request.POST, can_delete=True)
+        form = ExpenseForm(request.POST, project=project, can_delete=True)
         if form.data.get("delete") == "Delete":
             expense.delete()
-            return HttpResponseRedirect(reverse("expenses:expense_list", project_public_id=project.public_id))
+            return HttpResponseRedirect(
+                reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
+            )
         if form.is_valid():
             expense.spent_at = form.cleaned_data["spent_at"]
             expense.amount = form.cleaned_data["amount"]
@@ -95,9 +97,11 @@ def expense_detail(request: HttpRequest, project_public_id: str, expense_public_
             expense.category = form.cleaned_data["category"]
             expense.notes = form.cleaned_data["notes"]
             expense.save()
-            return HttpResponseRedirect(reverse("expenses:expense_list", project_public_id=project.public_id))
+            return HttpResponseRedirect(
+                reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
+            )
     else:
-        form = ExpenseForm(instance=expense, can_delete=True)
+        form = ExpenseForm(instance=expense, project=project, can_delete=True)
 
     return render(request, "expenses/expense_detail.html", dict(form=form, project=project))
 
@@ -106,7 +110,7 @@ def expense_detail(request: HttpRequest, project_public_id: str, expense_public_
 def expense_create(request: HttpRequest, project_public_id: str):
     project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
     if request.method == "POST":
-        form = ExpenseForm(request.POST, can_delete=False)
+        form = ExpenseForm(request.POST, project=project, can_delete=False)
         if form.is_valid():
             new_expense = Expense(
                 spent_at=form.cleaned_data["spent_at"],
@@ -116,9 +120,11 @@ def expense_create(request: HttpRequest, project_public_id: str):
                 notes=form.cleaned_data["notes"],
             )
             new_expense.save()
-            return HttpResponseRedirect(reverse("expenses:expense_list", project_public_id=project.public_id))
+            return HttpResponseRedirect(
+                reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
+            )
     else:
-        form = ExpenseForm(initial=dict(spent_at=timezone.now()), can_delete=False)
+        form = ExpenseForm(initial=dict(spent_at=timezone.now()), project=project, can_delete=False)
 
     return render(request, "expenses/expense_detail.html", dict(form=form, project=project))
 

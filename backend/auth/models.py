@@ -4,4 +4,5 @@ from helpers.models import BaseModel
 
 
 class User(BaseModel, AbstractUser):
-    pass
+    def __str__(self):
+        return f"User {self.username}"

@@ -2,7 +2,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Button, Submit
 from django import forms
 
-from expenses.models import Expense, Project
+from expenses.models import Category, Expense, Project
 
 
 class DatetimeLocalInput(forms.DateTimeInput):
@@ -34,8 +34,12 @@ class ExpenseForm(forms.ModelForm):
             "spent_at": DatetimeLocalInput(),
         }
 
-    def __init__(self, *args, can_delete, **kwargs):
+    def __init__(self, *args, project, can_delete, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["category"].queryset = Category.objects.filter(project=project).order_by("order")
+        self.fields["category"].label_from_instance = lambda c: c.name
+        self.fields["category"].empty_label = None
+
         self.helper = FormHelper()
         self.helper.form_method = "post"
         self.helper.add_input(

@@ -15,10 +15,10 @@ class Project(BaseModel):
     user = models.ForeignKey(User, related_name="projects", on_delete=models.CASCADE)
     name = models.CharField(max_length=200)
     order = models.IntegerField(default=generate_order)
-    notes = models.CharField(max_length=1000, blank=True, null=True)
+    notes = models.CharField(max_length=1000, blank=True)
 
     def __str__(self):
-        return f"Project {self.public_id}: {self.name}"
+        return f"Project {self.name}"
 
 
 class Category(BaseModel):
@@ -26,6 +26,7 @@ class Category(BaseModel):
     name = models.CharField(max_length=200)
     order = models.IntegerField(default=generate_order)
     color = ColorField(default="#FF0000")
+    notes = models.CharField(max_length=1000, blank=True)
     parent = models.ForeignKey("self", related_name="children", null=True, blank=True, on_delete=models.SET_NULL)
 
     class Meta:
@@ -97,7 +98,7 @@ class Expense(BaseModel):
     spent_at = models.DateTimeField()
     amount = models.FloatField()
     source = models.CharField(max_length=200)
-    notes = models.CharField(max_length=1000, blank=True, null=True)
+    notes = models.CharField(max_length=1000, blank=True)
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
