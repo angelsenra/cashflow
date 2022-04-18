@@ -21,7 +21,7 @@
       {% endif %}
       {% for header in header_row %}
       <th colspan="{{ header.colspan }}" rowspan="{{ header.rowspan }}" style="background-color: {{ header.color }}40 ">
-        <a href="{{ header.link }}">
+        <a class="d-block link-unstyled" href="{{ header.link }}">
           <span class="text-wrap">
             {{ header.name }}
           </span>
@@ -31,13 +31,19 @@
     </tr>
     {% endfor %}
   </thead>
-  {% for value_header, value_row in value_rows %}
+  {% for period, value_row in value_rows %}
   <tr>
-    <th><a href="{% url 'expenses:expense_list' project_public_id=project.public_id %}">
-      <span>{{ value_header }}</span>
-    </a></th>
+    <th>
+      <a class="d-block link-unstyled" href="{{ period.link }}">
+        <span>{{ period.name }}</span>
+      </a>
+    </th>
     {% for value in value_row %}
-    <td class="text-right text-monospace"><span>{{ value }}</span></td>
+    <td class="text-right text-monospace">
+      <a class="d-block link-unstyled" href="{{ value.link }}">
+        <span>{{ value.name }}</span>
+      </a>
+    </td>
     {% endfor %}
   </tr>
   {% endfor %}

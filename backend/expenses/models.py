@@ -39,7 +39,7 @@ class Category(BaseModel):
             return f"Category {self.name}"
 
     def build_levels(
-        self: typing.Union["Category", None], iteration=0, project=None
+        self: typing.Optional["Category"], iteration=0, project=None
     ) -> list[list[tuple["Category", bool]]]:
         if iteration > 50:
             raise Exception(
@@ -62,8 +62,8 @@ class Category(BaseModel):
         return levels
 
     def build_values(
-        self: typing.Union["Category", None], iteration=0, filter_=None, project=None
-    ) -> list[tuple[float, bool]]:
+        self: typing.Optional["Category"], iteration=0, filter_=None, project=None
+    ) -> list[tuple[float, bool, typing.Optional["Category"]]]:
         if filter_ is None:
             filter_ = dict()
         if iteration > 50:
@@ -79,7 +79,7 @@ class Category(BaseModel):
             other = sum(expense.amount for expense in self.expenses.filter(**filter_).all())
 
         if not children:
-            return [(other, False)]
+            return [(other, False, self)]
 
         children_values = list(
             itertools.chain(*[child.build_values(iteration=iteration + 1, filter_=filter_) for child in children])
@@ -87,9 +87,9 @@ class Category(BaseModel):
         if self is None:
             return children_values
         return [
-            (other + sum(value for value, is_total in children_values if not is_total), True),
+            (other + sum(value for value, is_total in children_values if not is_total), True, self),
             *children_values,
-            (other, False),
+            (other, False, self),
         ]
 
 

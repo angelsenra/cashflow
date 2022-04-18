@@ -1,6 +1,12 @@
-.table-hover-cells td:hover, .table-hover-cells th:hover {
-    background-color: rgba(0, 0, 255, .031) !important;
+.table-hover-cells td:hover,
+.table-hover-cells th:hover {
+  background-color: rgba(0, 0, 255, 0.031) !important;
 }
 .table-hover-rows tr:hover {
-    background-color: rgba(0, 0, 255, .03) !important;
+  background-color: rgba(0, 0, 255, 0.03) !important;
+}
+.link-unstyled,
+.link-unstyled:hover {
+  color: inherit;
+  text-decoration: none;
 }

@@ -52,12 +52,7 @@ def project_create(request: AuthenticatedHttpRequest):
 def project_detail(request: AuthenticatedHttpRequest, project_public_id: str):
     project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
     header_rows = _generate_header_rows(project=project)
-    value_rows = list()
-    periods = _generate_periods(amount=6)
-    for period_start, period_end in periods:
-        filter_ = dict(spent_at__gte=period_start, spent_at__lte=period_end)
-        values = Category.build_values(None, filter_=filter_, project=project)
-        value_rows.append([period_start.strftime("%b %Y"), ["%.2f€" % value for value, _ in values]])
+    value_rows = _generate_value_rows(project=project)
 
     return render(
         request, "expenses/project_detail.html", dict(header_rows=header_rows, value_rows=value_rows, project=project)
@@ -135,27 +130,28 @@ def expense_create(request: AuthenticatedHttpRequest, project_public_id: str):
     return render(request, "expenses/expense_detail.html", dict(form=form, project=project))
 
 
-def _generate_header_rows(project: Project) -> list[list[tuple[str, int, int, typing.Any]]]:
-    @dataclass
-    class Header:
-        name: str
-        colspan: int
-        rowspan: int
-        category: Category
-        is_total: bool
+@dataclass
+class Header:
+    name: str
+    colspan: int
+    rowspan: int
+    category: Category
+    is_total: bool
 
-        @property
-        def color(self):
-            return self.category.color
+    @property
+    def color(self):
+        return self.category.color
 
-        @property
-        def link(self):
-            return (
-                reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
-                + f"?category={self.category.public_id}"
-                + ("&show_children=True" if self.is_total else "")
-            )
+    @property
+    def link(self):
+        return (
+            reverse("expenses:expense_list", kwargs=dict(project_public_id=self.category.project.public_id))
+            + f"?category={self.category.public_id}"
+            + ("&show_children=True" if self.is_total else "")
+        )
 
+
+def _generate_header_rows(*, project: Project) -> list[list[Header]]:
     levels = Category.build_levels(None, project=project)
     parents_considered = list()
     header_rows = list()
@@ -190,6 +186,68 @@ def _generate_header_rows(project: Project) -> list[list[tuple[str, int, int, ty
                     )
         header_rows.append(header_row)
     return header_rows
+
+
+@dataclass
+class Period:
+    project: Project
+    period_start: datetime.datetime
+    period_end: datetime.datetime
+
+    @property
+    def name(self):
+        return self.period_start.strftime("%b %Y")
+
+    @property
+    def link(self):
+        period_start_str, _ = self.period_start.isoformat().split("T")
+        period_end_str, _ = self.period_end.isoformat().split("T")
+        return (
+            reverse("expenses:expense_list", kwargs=dict(project_public_id=self.project.public_id))
+            + f"?from={period_start_str}&to={period_end_str}"
+        )
+
+
+@dataclass
+class Value:
+    amount: int
+    category: typing.Optional[Category]
+    period_start: datetime.datetime
+    period_end: datetime.datetime
+
+    @property
+    def name(self):
+        return "%.2f€" % self.amount
+
+    @property
+    def link(self):
+        if self.category is None:
+            return ""
+
+        period_start_str, _ = self.period_start.isoformat().split("T")
+        period_end_str, _ = self.period_end.isoformat().split("T")
+        return (
+            reverse("expenses:expense_list", kwargs=dict(project_public_id=self.category.project.public_id))
+            + f"?category={self.category.public_id}&from={period_start_str}&to={period_end_str}"
+        )
+
+
+def _generate_value_rows(*, project: Project) -> list[list[tuple[Period, list[Value]]]]:
+    value_rows = list()
+    periods = _generate_periods(amount=6)
+    for period_start, period_end in periods:
+        filter_ = dict(spent_at__gte=period_start, spent_at__lte=period_end)
+        values = Category.build_values(None, filter_=filter_, project=project)
+        value_rows.append(
+            (
+                Period(project=project, period_start=period_start, period_end=period_end),
+                [
+                    Value(amount=value, category=category, period_start=period_start, period_end=period_end)
+                    for value, _, category in values
+                ],
+            )
+        )
+    return value_rows
 
 
 def _create_categories_from_template(category_template: str, /, *, project: Project):
