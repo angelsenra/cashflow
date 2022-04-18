@@ -12,24 +12,32 @@
   </ol>
 </nav>
 
-<table class="table table-sm table-striped table-bordered">
+<table class="table table-sm table-bordered table-hover-rows table-hover-cells">
   <thead class="thead-light">
     {% for header_row in header_rows %}
     <tr>
       {% if forloop.counter0 == 0 %}
       <th rowspan="{{ header_rows|length }}"></th>
       {% endif %}
-      {% for name, colspan, rowspan, color in header_row %}
-      <th colspan="{{ colspan }}" rowspan="{{ rowspan }}" style="background: {{ color }}40">{{ name }}</th>
+      {% for header in header_row %}
+      <th colspan="{{ header.colspan }}" rowspan="{{ header.rowspan }}" style="background-color: {{ header.color }}40 ">
+        <a href="{{ header.link }}">
+          <span class="text-wrap">
+            {{ header.name }}
+          </span>
+        </a>
+      </th>
       {% endfor %}
     </tr>
     {% endfor %}
   </thead>
   {% for value_header, value_row in value_rows %}
   <tr>
-    <th><a href="{% url 'expenses:expense_list' project.public_id %}">{{ value_header }}</a></th>
+    <th><a href="{% url 'expenses:expense_list' project_public_id=project.public_id %}">
+      <span>{{ value_header }}</span>
+    </a></th>
     {% for value in value_row %}
-    <td class="text-right" style="font-size: 1rem; font-family: ui-monospace;">{{ value }}</td>
+    <td class="text-right text-monospace"><span>{{ value }}</span></td>
     {% endfor %}
   </tr>
   {% endfor %}

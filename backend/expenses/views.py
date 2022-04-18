@@ -1,6 +1,7 @@
 import datetime
 import logging
 import typing
+from dataclasses import dataclass
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponseRedirect
@@ -135,6 +136,26 @@ def expense_create(request: AuthenticatedHttpRequest, project_public_id: str):
 
 
 def _generate_header_rows(project: Project) -> list[list[tuple[str, int, int, typing.Any]]]:
+    @dataclass
+    class Header:
+        name: str
+        colspan: int
+        rowspan: int
+        category: Category
+        is_total: bool
+
+        @property
+        def color(self):
+            return self.category.color
+
+        @property
+        def link(self):
+            return (
+                reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
+                + f"?category={self.category.public_id}"
+                + ("&show_children=True" if self.is_total else "")
+            )
+
     levels = Category.build_levels(None, project=project)
     parents_considered = list()
     header_rows = list()
@@ -144,21 +165,29 @@ def _generate_header_rows(project: Project) -> list[list[tuple[str, int, int, ty
         for category, has_children in level:
             parent = category.parent
             if parent and parent not in parents_considered:
-                header_row.append(("∑", 1, levels_left, parent.color))
+                header_row.append(Header(name="∑", colspan=1, rowspan=levels_left, category=category, is_total=True))
 
             if has_children:
                 columns_under_category = sum(
                     len(level_) + len([has_children for _, has_children in level_ if has_children])
                     for level_ in category.build_levels()
                 )
-                header_row.append((category.name, columns_under_category, 1, category.color))
+                header_row.append(
+                    Header(
+                        name=category.name, colspan=columns_under_category, rowspan=1, category=category, is_total=False
+                    )
+                )
             else:
-                header_row.append((category.name, 1, levels_left, category.color))
+                header_row.append(
+                    Header(name=category.name, colspan=1, rowspan=levels_left, category=category, is_total=False)
+                )
 
             if parent:
                 parents_considered.append(parent)
                 if parent.children.count() == parents_considered.count(parent):
-                    header_row.append(("Other", 1, levels_left, parent.color))
+                    header_row.append(
+                        Header(name="Other", colspan=1, rowspan=levels_left, category=category, is_total=False)
+                    )
         header_rows.append(header_row)
     return header_rows
 

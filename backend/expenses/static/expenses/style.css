@@ -1,0 +1,6 @@
+.table-hover-cells td:hover, .table-hover-cells th:hover {
+    background-color: rgba(0, 0, 255, .031) !important;
+}
+.table-hover-rows tr:hover {
+    background-color: rgba(0, 0, 255, .03) !important;
+}
