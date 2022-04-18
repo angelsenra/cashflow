@@ -4,6 +4,7 @@ import typing
 from dataclasses import dataclass
 
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import HttpRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
@@ -14,6 +15,8 @@ from expenses.forms import ExpenseForm, ProjectCreateForm
 from expenses.models import Category, Expense, Project
 
 logger = logging.getLogger(__name__)
+
+DATE_FORMAT = "%Y-%m-%d"
 
 
 class AuthenticatedHttpRequest(HttpRequest):
@@ -62,14 +65,31 @@ def project_detail(request: AuthenticatedHttpRequest, project_public_id: str):
 @login_required
 def expense_list(request: AuthenticatedHttpRequest, project_public_id: str):
     project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
+    base_filter_args = [Q(category__project=project)]
+    arg_category = request.GET.get("category")
+    arg_show_children = request.GET.get("show_children")
+    if arg_category:
+        if arg_show_children and arg_show_children.lower() == "true":
+            base_filter_args.append(Q(category__public_id=arg_category) | Q(category__parent__public_id=arg_category))
+        else:
+            base_filter_args.append(Q(category__public_id=arg_category))
+    arg_from = request.GET.get("from")
+    from_datetime = None
+    if arg_from:
+        from_datetime = datetime.datetime.strptime(arg_from, DATE_FORMAT)
+    arg_to = request.GET.get("to")
+    to_datetime = None
+    if arg_to:
+        to_datetime = datetime.datetime.strptime(arg_to, DATE_FORMAT)
+
     periods_expenses = list()
-    periods = _generate_periods(amount=6)
+    periods = _generate_periods(amount=6, from_datetime=from_datetime, to_datetime=to_datetime)
     for period_start, period_end in periods:
-        expenses = (
-            Expense.objects.filter(spent_at__gte=period_start, spent_at__lte=period_end, category__project=project)
-            .order_by("spent_at")
-            .all()
+        filter_kwargs = dict(
+            spent_at__gte=from_datetime if from_datetime and from_datetime > period_start else period_start,
+            spent_at__lt=to_datetime if to_datetime and to_datetime < period_end else period_end,
         )
+        expenses = Expense.objects.filter(*base_filter_args, **filter_kwargs).order_by("spent_at").all()
         if not expenses:
             continue
         period_expenses = list()
@@ -161,7 +181,7 @@ def _generate_header_rows(*, project: Project) -> list[list[Header]]:
         for category, has_children in level:
             parent = category.parent
             if parent and parent not in parents_considered:
-                header_row.append(Header(name="∑", colspan=1, rowspan=levels_left, category=category, is_total=True))
+                header_row.append(Header(name="∑", colspan=1, rowspan=levels_left, category=parent, is_total=True))
 
             if has_children:
                 columns_under_category = sum(
@@ -170,7 +190,7 @@ def _generate_header_rows(*, project: Project) -> list[list[Header]]:
                 )
                 header_row.append(
                     Header(
-                        name=category.name, colspan=columns_under_category, rowspan=1, category=category, is_total=False
+                        name=category.name, colspan=columns_under_category, rowspan=1, category=category, is_total=True
                     )
                 )
             else:
@@ -182,7 +202,7 @@ def _generate_header_rows(*, project: Project) -> list[list[Header]]:
                 parents_considered.append(parent)
                 if parent.children.count() == parents_considered.count(parent):
                     header_row.append(
-                        Header(name="Other", colspan=1, rowspan=levels_left, category=category, is_total=False)
+                        Header(name="Other", colspan=1, rowspan=levels_left, category=parent, is_total=False)
                     )
         header_rows.append(header_row)
     return header_rows
@@ -200,8 +220,8 @@ class Period:
 
     @property
     def link(self):
-        period_start_str, _ = self.period_start.isoformat().split("T")
-        period_end_str, _ = self.period_end.isoformat().split("T")
+        period_start_str = self.period_start.strftime(DATE_FORMAT)
+        period_end_str = self.period_end.strftime(DATE_FORMAT)
         return (
             reverse("expenses:expense_list", kwargs=dict(project_public_id=self.project.public_id))
             + f"?from={period_start_str}&to={period_end_str}"
@@ -210,10 +230,11 @@ class Period:
 
 @dataclass
 class Value:
-    amount: int
+    amount: float
     category: typing.Optional[Category]
     period_start: datetime.datetime
     period_end: datetime.datetime
+    is_total: bool
 
     @property
     def name(self):
@@ -224,15 +245,16 @@ class Value:
         if self.category is None:
             return ""
 
-        period_start_str, _ = self.period_start.isoformat().split("T")
-        period_end_str, _ = self.period_end.isoformat().split("T")
+        period_start_str = self.period_start.strftime(DATE_FORMAT)
+        period_end_str = self.period_end.strftime(DATE_FORMAT)
         return (
             reverse("expenses:expense_list", kwargs=dict(project_public_id=self.category.project.public_id))
             + f"?category={self.category.public_id}&from={period_start_str}&to={period_end_str}"
+            + ("&show_children=True" if self.is_total else "")
         )
 
 
-def _generate_value_rows(*, project: Project) -> list[list[tuple[Period, list[Value]]]]:
+def _generate_value_rows(*, project: Project) -> list[tuple[Period, list[Value]]]:
     value_rows = list()
     periods = _generate_periods(amount=6)
     for period_start, period_end in periods:
@@ -242,8 +264,14 @@ def _generate_value_rows(*, project: Project) -> list[list[tuple[Period, list[Va
             (
                 Period(project=project, period_start=period_start, period_end=period_end),
                 [
-                    Value(amount=value, category=category, period_start=period_start, period_end=period_end)
-                    for value, _, category in values
+                    Value(
+                        amount=value,
+                        category=category,
+                        period_start=period_start,
+                        period_end=period_end,
+                        is_total=is_total,
+                    )
+                    for value, is_total, category in values
                 ],
             )
         )
@@ -272,12 +300,19 @@ def _create_categories_from_template(category_template: str, /, *, project: Proj
         raise NotImplementedError(f"{category_template=}")
 
 
-def _generate_periods(*, amount: int) -> list[tuple[datetime.datetime, datetime.datetime]]:
-    now = timezone.now()
-    month_total = now.month - 1 + now.year * 12
+def _generate_periods(
+    *, amount: int, from_datetime: datetime.datetime = None, to_datetime: datetime.datetime = None
+) -> list[tuple[datetime.datetime, datetime.datetime]]:
+    ending_at = to_datetime or timezone.now()
+    ending_at_months = ending_at.month - 1 + ending_at.year * 12 + 1
+    if from_datetime:
+        starting_at_months = from_datetime.month - 1 + from_datetime.year * 12
+    else:
+        starting_at_months = ending_at_months - amount
+
     return [
-        (_get_datetime_from_month_total(month_total - i), _get_datetime_from_month_total(month_total - i + 1))
-        for i in range(amount - 1, -1, -1)
+        (_get_datetime_from_month_total(m), _get_datetime_from_month_total(m + 1))
+        for m in range(starting_at_months, ending_at_months)
     ]
 
 

@@ -17,14 +17,16 @@
     {% for header_row in header_rows %}
     <tr>
       {% if forloop.counter0 == 0 %}
-      <th rowspan="{{ header_rows|length }}"></th>
+      <th rowspan="{{ header_rows|length }}">
+        <a class="d-block link-unstyled" href="{% url 'expenses:expense_list' project_public_id=project.public_id %}">
+          <span>All</span>
+        </a>
+      </th>
       {% endif %}
       {% for header in header_row %}
       <th colspan="{{ header.colspan }}" rowspan="{{ header.rowspan }}" style="background-color: {{ header.color }}40 ">
         <a class="d-block link-unstyled" href="{{ header.link }}">
-          <span class="text-wrap">
-            {{ header.name }}
-          </span>
+          <span>{{ header.name }}</span>
         </a>
       </th>
       {% endfor %}

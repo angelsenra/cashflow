@@ -87,7 +87,7 @@ class Category(BaseModel):
         if self is None:
             return children_values
         return [
-            (other + sum(value for value, is_total in children_values if not is_total), True, self),
+            (other + sum(value for value, is_total, _ in children_values if not is_total), True, self),
             *children_values,
             (other, False, self),
         ]
