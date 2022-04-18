@@ -6,25 +6,25 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('expenses', '0001_initial'),
+        ("expenses", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='category',
-            name='notes',
+            model_name="category",
+            name="notes",
             field=models.CharField(blank=True, max_length=1000),
         ),
         migrations.AlterField(
-            model_name='expense',
-            name='notes',
-            field=models.CharField(blank=True, default='', max_length=1000),
+            model_name="expense",
+            name="notes",
+            field=models.CharField(blank=True, default="", max_length=1000),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='project',
-            name='notes',
-            field=models.CharField(blank=True, default='', max_length=1000),
+            model_name="project",
+            name="notes",
+            field=models.CharField(blank=True, default="", max_length=1000),
             preserve_default=False,
         ),
     ]
