@@ -31,4 +31,4 @@ class Command(BaseCommand):
         if linter_type in ["mypy", "all"]:
             subprocess.run(["mypy", *filenames], check=True)
 
-        self.stdout.write(self.style.SUCCESS("Success"))
+        self.stdout.write(self.style.SUCCESS(f"Successfully ran 'lint {linter_type}'."))

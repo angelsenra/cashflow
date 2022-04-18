@@ -8,20 +8,25 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
 
+from auth.models import User
 from expenses.forms import ExpenseForm, ProjectCreateForm
 from expenses.models import Category, Expense, Project
 
 logger = logging.getLogger(__name__)
 
 
+class AuthenticatedHttpRequest(HttpRequest):
+    user: User
+
+
 @login_required
-def project_list(request: HttpRequest):
+def project_list(request: AuthenticatedHttpRequest):
     projects = sorted(request.user.projects.all(), key=lambda p: p.order)
     return render(request, "expenses/project_list.html", dict(projects=projects))
 
 
 @login_required
-def project_create(request: HttpRequest):
+def project_create(request: AuthenticatedHttpRequest):
     if request.method == "POST":
         form = ProjectCreateForm(request.POST)
         if form.is_valid():
@@ -43,7 +48,7 @@ def project_create(request: HttpRequest):
 
 
 @login_required
-def project_detail(request: HttpRequest, project_public_id: str):
+def project_detail(request: AuthenticatedHttpRequest, project_public_id: str):
     project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
     header_rows = _generate_header_rows(project=project)
     value_rows = list()
@@ -59,7 +64,7 @@ def project_detail(request: HttpRequest, project_public_id: str):
 
 
 @login_required
-def expense_list(request: HttpRequest, project_public_id: str):
+def expense_list(request: AuthenticatedHttpRequest, project_public_id: str):
     project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
     periods_expenses = list()
     periods = _generate_periods(amount=6)
@@ -80,7 +85,7 @@ def expense_list(request: HttpRequest, project_public_id: str):
 
 
 @login_required
-def expense_detail(request: HttpRequest, project_public_id: str, expense_public_id: str):
+def expense_detail(request: AuthenticatedHttpRequest, project_public_id: str, expense_public_id: str):
     project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
     expense = get_object_or_404(Expense, public_id=expense_public_id, category__project=project)
     if request.method == "POST":
@@ -107,7 +112,7 @@ def expense_detail(request: HttpRequest, project_public_id: str, expense_public_
 
 
 @login_required
-def expense_create(request: HttpRequest, project_public_id: str):
+def expense_create(request: AuthenticatedHttpRequest, project_public_id: str):
     project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
     if request.method == "POST":
         form = ExpenseForm(request.POST, project=project, can_delete=False)
