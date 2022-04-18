@@ -1,43 +1,53 @@
 import itertools
 import logging
-import secrets
 import typing
-import uuid
 
 from colorfield.fields import ColorField
 from django.db import models
 
+from auth.models import User
+from helpers.models import BaseModel, generate_order
+
 logger = logging.getLogger(__name__)
 
 
-def generate_public_id():
-    return secrets.token_urlsafe(9)
-
-
-class Category(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    public_id = models.CharField(unique=True, default=generate_public_id, max_length=50, editable=False)
-    created_at = models.DateTimeField(auto_now=True)
-    updated_at = models.DateTimeField(auto_now_add=True)
+class Project(BaseModel):
+    user = models.ForeignKey(User, related_name="projects", on_delete=models.CASCADE)
     name = models.CharField(max_length=200)
-    order = models.IntegerField()
+    order = models.IntegerField(default=generate_order)
+    notes = models.CharField(max_length=1000, blank=True)
+
+    def __str__(self):
+        return f"Project {self.name}"
+
+
+class Category(BaseModel):
+    project = models.ForeignKey(Project, related_name="categories", on_delete=models.CASCADE)
+    name = models.CharField(max_length=200)
+    order = models.IntegerField(default=generate_order)
     color = ColorField(default="#FF0000")
+    notes = models.CharField(max_length=1000, blank=True)
     parent = models.ForeignKey("self", related_name="children", null=True, blank=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        verbose_name_plural = "categories"
 
     def __str__(self):
         if self.parent:
-            return f"{self.name} (child of {self.parent.name})"
+            return f"Category {self.name} (child of {self.parent.name})"
         else:
-            return f"{self.name}"
+            return f"Category {self.name}"
 
-    def build_levels(self: typing.Union["Category", None], iteration=0) -> list[list[tuple["Category", bool]]]:
+    def build_levels(
+        self: typing.Union["Category", None], iteration=0, project=None
+    ) -> list[list[tuple["Category", bool]]]:
         if iteration > 50:
             raise Exception(
                 f"We hit 50 iterations on the recursive levels call. There might be something wrong with {self}"
             )
 
         if self is None:
-            children = Category.objects.filter(parent=None).all()
+            children = Category.objects.filter(parent=None, project=project).all()
             levels = list()
         else:
             children = self.children.all()
@@ -51,7 +61,9 @@ class Category(models.Model):
                 levels.append(list(itertools.chain(*list_of_each_level)))
         return levels
 
-    def build_values(self: typing.Union["Category", None], iteration=0, filter_=None) -> list[tuple[float, bool]]:
+    def build_values(
+        self: typing.Union["Category", None], iteration=0, filter_=None, project=None
+    ) -> list[tuple[float, bool]]:
         if filter_ is None:
             filter_ = dict()
         if iteration > 50:
@@ -60,7 +72,7 @@ class Category(models.Model):
             )
 
         if self is None:
-            children = Category.objects.filter(parent=None).all()
+            children = Category.objects.filter(parent=None, project=project).all()
             other = 0.0
         else:
             children = self.children.all()
@@ -81,17 +93,13 @@ class Category(models.Model):
         ]
 
 
-class Expense(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    public_id = models.CharField(unique=True, default=generate_public_id, max_length=50, editable=False)
-    created_at = models.DateTimeField(auto_now=True)
-    updated_at = models.DateTimeField(auto_now_add=True)
+class Expense(BaseModel):
+    category = models.ForeignKey(Category, related_name="expenses", on_delete=models.CASCADE)
     spent_at = models.DateTimeField()
     amount = models.FloatField()
     source = models.CharField(max_length=200)
-    category = models.ForeignKey(Category, related_name="expenses", on_delete=models.CASCADE)
-    notes = models.CharField(max_length=1000, blank=True, null=True)
+    notes = models.CharField(max_length=1000, blank=True)
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
-        return f"${self.amount} at {self.source} on {self.spent_at} ({self.category})"
+        return f"Expense ${self.amount} at {self.source} on {self.spent_at} ({self.category})"

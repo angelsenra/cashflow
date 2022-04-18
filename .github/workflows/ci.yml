@@ -38,25 +38,9 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install --user pipenv
-          pipenv sync --dev --system
+          pipenv sync --dev
         working-directory: backend
-      - name: black
-        if: ${{ matrix.command == 'black' }}
+      - name: Run linting
         run: |
-          black --check --diff $(git ls-files '*.py')
-        working-directory: backend
-      - name: isort
-        if: ${{ matrix.command == 'isort' }}
-        run: |
-          isort --check --diff $(git ls-files '*.py')
-        working-directory: backend
-      - name: pylint
-        if: ${{ matrix.command == 'pylint' }}
-        run: |
-          pylint $(git ls-files '*.py')
-        working-directory: backend
-      - name: mypy
-        if: ${{ matrix.command == 'mypy' }}
-        run: |
-          mypy $(git ls-files '*.py')
+          pipenv run python manage.py lint ${{ matrix.command }}
         working-directory: backend

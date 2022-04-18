@@ -1,12 +1,14 @@
 from django.urls import path
 
-from . import views
+from expenses.views import expense_create, expense_detail, expense_list, project_create, project_detail, project_list
 
 app_name = "expenses"
 urlpatterns = [
-    path("", views.index, name="index"),
-    path("p/4jl192o02/overview/?collapsed=828391,987298", views.table, name="table"),
-    path("p/4jl192o02/expenses/?filter=yeo", views.list_, name="list"),
-    path("p/4jl192o02/expenses/new/", views.create_expense, name="create_expense"),
-    path("p/4jl192o02/expenses/<str:expense_public_id>/", views.detail, name="detail"),
+    path("", project_list, name="index"),
+    path("", project_list, name="project_list"),
+    path("projects/new/", project_create, name="project_create"),
+    path("p/<str:project_public_id>/", project_detail, name="project_detail"),
+    path("p/<str:project_public_id>/e/", expense_list, name="expense_list"),
+    path("p/<str:project_public_id>/e/new/", expense_create, name="expense_create"),
+    path("p/<str:project_public_id>/e/<str:expense_public_id>/", expense_detail, name="expense_detail"),
 ]

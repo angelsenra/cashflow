@@ -1,0 +1,30 @@
+{% extends "expenses/base_bootstrap.html" %}
+
+{% block content %}
+<nav>
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item active">Projects</li>
+    <form class="ml-auto" action="{% url 'account_logout' %}" method="post">
+      {% csrf_token %}
+      <input type="submit" class="btn btn-sm btn-danger" name="logout" value="Logout">
+    </form>
+  </ol>
+</nav>
+
+<br>
+<a class="btn btn-primary" href="{% url 'expenses:project_create' %}" role="button">Create a new project</a>
+<br>
+<br>
+
+<ul class="list-group">
+  {% for project in projects %}
+  <a href="{% url 'expenses:project_detail' project.public_id %}" class="list-group-item list-group-item-action flex-column align-items-start">
+    <div class="d-flex w-100 justify-content-between">
+      <h5 class="mb-1">{{ project.name }}</h5>
+      <small class="text-muted">{{ project.created_at }}</small>
+    </div>
+    <small class="text-muted">{{ project.notes }}</small>
+  </a>
+  {% endfor %}
+</ul>
+{% endblock %}

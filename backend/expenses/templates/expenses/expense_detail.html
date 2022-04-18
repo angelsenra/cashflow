@@ -7,8 +7,12 @@
 {% block content %}
 <nav>
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{% url 'expenses:list' %}">Home</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'expenses:expense_list' project.public_id %}">Home</a></li>
     <li class="breadcrumb-item active">Detail</li>
+    <form class="ml-auto" action="{% url 'account_logout' %}" method="post">
+      {% csrf_token %}
+      <input type="submit" class="btn btn-sm btn-danger" name="logout" value="Logout">
+    </form>
   </ol>
 </nav>
 

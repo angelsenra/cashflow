@@ -1,0 +1,18 @@
+{% extends "expenses/base_bootstrap.html" %}
+
+{% load crispy_forms_tags %}
+
+{% block content %}
+<nav>
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'expenses:project_list' %}">Projects</a></li>
+    <li class="breadcrumb-item active">Create</li>
+    <form class="ml-auto" action="{% url 'account_logout' %}" method="post">
+      {% csrf_token %}
+      <input type="submit" class="btn btn-sm btn-danger" name="logout" value="Logout">
+    </form>
+  </ol>
+</nav>
+
+{% crispy form %}
+{% endblock %}
