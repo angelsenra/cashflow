@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
+import enum
+import os
 import typing
 from pathlib import Path
 
@@ -18,13 +20,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
+# TODO See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-7s1!ig97kpzs2l$6@t#dkg3#zbgmtr#oacxf2du94n(dvxjigf"  # FIXME move this to an env var
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True  # FIXME env var (or dependant on ENVIRONMENT=development)
+class EnvironmentType(enum.Enum):
+    DEVELOPMENT = "development"
+    PRODUCTION = "production"
+
+
+ENVIRONMENT = EnvironmentType(os.environ["ENVIRONMENT"])
+SECRET_KEY = os.environ["SECRET_KEY"]
+
+DEBUG = ENVIRONMENT == EnvironmentType.DEVELOPMENT
 
 ALLOWED_HOSTS: list[typing.Any] = []
 
@@ -47,16 +54,18 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.sites",
     "django.contrib.staticfiles",
-    # Third parties (other than django)
-    "allauth.account",
-    "allauth.socialaccount",
-    "allauth",
-    "colorfield",
-    "crispy_forms",
     # Local apps
     "auth",
     "expenses",
     "polls",
+    # Third parties (other than django)
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.github",
+    "allauth.socialaccount.providers.google",
+    "allauth",
+    "colorfield",
+    "crispy_forms",
 ]
 
 MIDDLEWARE = [
@@ -147,3 +156,25 @@ CRISPY_FAIL_SILENTLY = not DEBUG
 
 SITE_ID = 1
 AUTH_USER_MODEL = "custom_auth.User"
+SOCIALACCOUNT_QUERY_EMAIL = True
+SOCIALACCOUNT_PROVIDERS = {
+    "github": {
+        "APP": {
+            "client_id": os.environ["GITHUB_CLIENT_ID"],
+            "secret": os.environ["GITHUB_CLIENT_SECRET"],
+            "key": "",
+        },
+        "VERIFIED_EMAIL": True,
+    },
+    "google": {
+        "APP": {
+            "client_id": os.environ["GOOGLE_CLIENT_ID"],
+            "secret": os.environ["GOOGLE_CLIENT_SECRET"],
+            "key": "",
+        },
+        "VERIFIED_EMAIL": True,
+    },
+}
+# For now, just print the emails to the console but don't actually send them
+# TODO EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
