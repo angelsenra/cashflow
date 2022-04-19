@@ -51,7 +51,7 @@
     {% for value in value_row %}
     <td class="text-right text-monospace">
       <a class="d-block link-unstyled" href="{{ value.link }}">
-        <span>{{ value.name }}</span>
+        <span{% if value.amount == 0 %} class="text-secondary font-weight-light"{% endif %}>{{ value.name }}</span>
       </a>
     </td>
     {% endfor %}

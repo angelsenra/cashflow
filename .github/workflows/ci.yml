@@ -42,5 +42,6 @@ jobs:
         working-directory: backend
       - name: Run linting
         run: |
+          source .envs/test.env
           pipenv run python manage.py lint ${{ matrix.command }}
         working-directory: backend

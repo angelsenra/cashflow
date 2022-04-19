@@ -9,6 +9,7 @@ django-colorfield = "*"
 django-stubs = "*"
 django-crispy-forms = "*"
 django-allauth = "*"
+gunicorn = "*"
 
 [dev-packages]
 black = "*"
