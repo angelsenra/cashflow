@@ -58,8 +58,21 @@ def project_detail(request: AuthenticatedHttpRequest, project_public_id: str):
     header_rows = _generate_header_rows(project=project)
     value_rows = _generate_value_rows(project=project)
 
+    create_expense_form_inline = CreateExpenseFormInline(project=project)
+    next_query_arg = urllib.parse.urlencode(dict(next=request.get_full_path()))
+    create_expense_form_inline.helper.form_action = (
+        reverse("expenses:expense_create", kwargs=dict(project_public_id=project.public_id)) + f"?{next_query_arg}"
+    )
+
     return render(
-        request, "expenses/project_detail.html", dict(header_rows=header_rows, value_rows=value_rows, project=project)
+        request,
+        "expenses/project_detail.html",
+        dict(
+            header_rows=header_rows,
+            value_rows=value_rows,
+            project=project,
+            create_expense_form_inline=create_expense_form_inline,
+        ),
     )
 
 
