@@ -1,12 +1,12 @@
 {% extends "expenses/base_bootstrap.html" %}
 {% load crispy_forms_tags %}
 
-{% block title %}My amazing detail{% endblock %}
-
 {% block content %}
 <nav>
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{% url 'expenses:expense_list' project.public_id %}">Home</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'expenses:project_list' %}">Projects</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'expenses:project_detail' project.public_id %}">{{ project.name }}</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'expenses:expense_list' project.public_id %}">Expenses</a></li>
     <li class="breadcrumb-item active">Detail</li>
     <form class="ml-auto" action="{% url 'account_logout' %}" method="post">
       {% csrf_token %}

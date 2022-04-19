@@ -4,7 +4,7 @@
 <nav>
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{% url 'expenses:project_list' %}">Projects</a></li>
-    <li class="breadcrumb-item active">Overview</li>
+    <li class="breadcrumb-item active">{{ project.name }}</li>
     <form class="ml-auto" action="{% url 'account_logout' %}" method="post">
       {% csrf_token %}
       <input type="submit" class="btn btn-sm btn-danger" name="logout" value="Logout">
@@ -30,6 +30,13 @@
         </a>
       </th>
       {% endfor %}
+      {% if forloop.counter0 == 0 %}
+      <th rowspan="{{ header_rows|length }}">
+        <a class="d-block link-unstyled" href="{% url 'expenses:expense_list' project_public_id=project.public_id %}">
+          <span>∑</span>
+        </a>
+      </th>
+      {% endif %}
     </tr>
     {% endfor %}
   </thead>

@@ -206,10 +206,14 @@ class Header:
 
     @property
     def link(self):
+        query_args = dict()
+        query_args["category"] = self.category.public_id
+        if self.is_total:
+            query_args["show_children"] = "True"
+
         return (
             reverse("expenses:expense_list", kwargs=dict(project_public_id=self.category.project.public_id))
-            + f"?category={self.category.public_id}"
-            + ("&show_children=True" if self.is_total else "")
+            + f"?{urllib.parse.urlencode(query_args)}"
         )
 
 
@@ -262,11 +266,12 @@ class Period:
 
     @property
     def link(self):
-        period_start_str = self.period_start.strftime(DATE_FORMAT)
-        period_end_str = self.period_end.strftime(DATE_FORMAT)
+        query_args = dict()
+        query_args["from"] = self.period_start.strftime(DATE_FORMAT)
+        query_args["to"] = self.period_end.strftime(DATE_FORMAT)
         return (
             reverse("expenses:expense_list", kwargs=dict(project_public_id=self.project.public_id))
-            + f"?from={period_start_str}&to={period_end_str}"
+            + f"?{urllib.parse.urlencode(query_args)}"
         )
 
 
@@ -277,6 +282,7 @@ class Value:
     period_start: datetime.datetime
     period_end: datetime.datetime
     is_total: bool
+    project: typing.Optional[Project] = None
 
     @property
     def name(self):
@@ -284,15 +290,21 @@ class Value:
 
     @property
     def link(self):
-        if self.category is None:
+        if self.category is None and self.project is None:
             return ""
 
-        period_start_str = self.period_start.strftime(DATE_FORMAT)
-        period_end_str = self.period_end.strftime(DATE_FORMAT)
+        query_args = dict()
+        query_args["from"] = self.period_start.strftime(DATE_FORMAT)
+        query_args["to"] = self.period_end.strftime(DATE_FORMAT)
+        if self.is_total:
+            query_args["show_children"] = "True"
+        if self.category:
+            query_args["category"] = self.category.public_id
+
+        project = self.project or self.category.project
         return (
-            reverse("expenses:expense_list", kwargs=dict(project_public_id=self.category.project.public_id))
-            + f"?category={self.category.public_id}&from={period_start_str}&to={period_end_str}"
-            + ("&show_children=True" if self.is_total else "")
+            reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
+            + f"?{urllib.parse.urlencode(query_args)}"
         )
 
 
@@ -302,6 +314,7 @@ def _generate_value_rows(*, project: Project) -> list[tuple[Period, list[Value]]
     for period_start, period_end in periods:
         filter_ = dict(spent_at__gte=period_start, spent_at__lte=period_end)
         values = Category.build_values(None, filter_=filter_, project=project)
+        total_of_the_period = sum(value for value, is_total, category in values if not is_total)
         value_rows.append(
             (
                 Period(project=project, period_start=period_start, period_end=period_end),
@@ -314,6 +327,16 @@ def _generate_value_rows(*, project: Project) -> list[tuple[Period, list[Value]]
                         is_total=is_total,
                     )
                     for value, is_total, category in values
+                ]
+                + [
+                    Value(
+                        amount=total_of_the_period,
+                        category=None,
+                        project=project,
+                        period_start=period_start,
+                        period_end=period_end,
+                        is_total=False,
+                    )
                 ],
             )
         )
