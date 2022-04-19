@@ -42,6 +42,8 @@ jobs:
         working-directory: backend
       - name: Run linting
         run: |
+          set -o allexport
           source .envs/test.env
+          set +o allexport
           pipenv run python manage.py lint ${{ matrix.command }}
         working-directory: backend
