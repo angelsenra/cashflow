@@ -114,7 +114,7 @@ def expense_list(request: AuthenticatedHttpRequest, project_public_id: str):
             )
         )
 
-    initial_data = dict()
+    initial_data: dict[str, typing.Any] = dict()
     if to_datetime:
         initial_data["spent_at"] = to_datetime - datetime.timedelta(minutes=1)
     if arg_category:
