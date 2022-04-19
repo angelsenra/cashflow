@@ -1,6 +1,7 @@
 import datetime
 import logging
 import typing
+import urllib.parse
 from dataclasses import dataclass
 
 from django.contrib.auth.decorators import login_required
@@ -11,7 +12,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from auth.models import User
-from expenses.forms import ExpenseForm, ProjectCreateForm
+from expenses.forms import CreateExpenseFormInline, ProjectCreateForm, UpdateExpenseForm
 from expenses.models import Category, Expense, Project
 
 logger = logging.getLogger(__name__)
@@ -95,21 +96,61 @@ def expense_list(request: AuthenticatedHttpRequest, project_public_id: str):
         period_expenses = list()
         for a, expense in enumerate(expenses):
             period_expenses.append(dict(number=a + 1, expense=expense, expense_amount="%.2f€" % expense.amount))
-        periods_expenses.append(dict(period_name=period_start.strftime("%b %Y"), period_expenses=period_expenses))
+        periods_expenses.append(
+            dict(
+                period_start_name=period_start.strftime("%b %Y"),
+                period_end_name=period_end.strftime("%b %Y"),
+                period_expenses=period_expenses,
+            )
+        )
 
-    return render(request, "expenses/expense_list.html", dict(periods_expenses=periods_expenses, project=project))
+    # If there are no expenses, at least show the dates
+    if not periods_expenses:
+        periods_expenses.append(
+            dict(
+                period_start_name=periods[0][0].strftime("%b %Y"),
+                period_end_name=periods[-1][1].strftime("%b %Y"),
+                period_expenses=list(),
+            )
+        )
+
+    initial_data = dict()
+    if to_datetime:
+        initial_data["spent_at"] = to_datetime - datetime.timedelta(minutes=1)
+    if arg_category:
+        try:
+            initial_data["category"] = Category.objects.get(public_id=arg_category)
+        except Category.DoesNotExist:
+            pass
+    create_expense_form_inline = CreateExpenseFormInline(initial=initial_data, project=project)
+    next_query_arg = urllib.parse.urlencode(dict(next=request.get_full_path()))
+    create_expense_form_inline.helper.form_action = (
+        reverse("expenses:expense_create", kwargs=dict(project_public_id=project.public_id)) + f"?{next_query_arg}"
+    )
+
+    return render(
+        request,
+        "expenses/expense_list.html",
+        dict(
+            periods_expenses=periods_expenses,
+            project=project,
+            create_expense_form_inline=create_expense_form_inline,
+            next_query_arg=next_query_arg,
+        ),
+    )
 
 
 @login_required
 def expense_detail(request: AuthenticatedHttpRequest, project_public_id: str, expense_public_id: str):
     project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
     expense = get_object_or_404(Expense, public_id=expense_public_id, category__project=project)
+    arg_next = request.GET.get("next")
     if request.method == "POST":
-        form = ExpenseForm(request.POST, project=project, can_delete=True)
+        form = UpdateExpenseForm(request.POST, project=project)
         if form.data.get("delete") == "Delete":
             expense.delete()
             return HttpResponseRedirect(
-                reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
+                arg_next or reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
             )
         if form.is_valid():
             expense.spent_at = form.cleaned_data["spent_at"]
@@ -119,10 +160,10 @@ def expense_detail(request: AuthenticatedHttpRequest, project_public_id: str, ex
             expense.notes = form.cleaned_data["notes"]
             expense.save()
             return HttpResponseRedirect(
-                reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
+                arg_next or reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
             )
     else:
-        form = ExpenseForm(instance=expense, project=project, can_delete=True)
+        form = UpdateExpenseForm(instance=expense, project=project)
 
     return render(request, "expenses/expense_detail.html", dict(form=form, project=project))
 
@@ -130,8 +171,9 @@ def expense_detail(request: AuthenticatedHttpRequest, project_public_id: str, ex
 @login_required
 def expense_create(request: AuthenticatedHttpRequest, project_public_id: str):
     project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
+    arg_next = request.GET.get("next")
     if request.method == "POST":
-        form = ExpenseForm(request.POST, project=project, can_delete=False)
+        form = CreateExpenseFormInline(request.POST, project=project)
         if form.is_valid():
             new_expense = Expense(
                 spent_at=form.cleaned_data["spent_at"],
@@ -142,10 +184,10 @@ def expense_create(request: AuthenticatedHttpRequest, project_public_id: str):
             )
             new_expense.save()
             return HttpResponseRedirect(
-                reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
+                arg_next or reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
             )
     else:
-        form = ExpenseForm(initial=dict(spent_at=timezone.now()), project=project, can_delete=False)
+        form = CreateExpenseFormInline(initial=dict(spent_at=timezone.now()), project=project)
 
     return render(request, "expenses/expense_detail.html", dict(form=form, project=project))
 
