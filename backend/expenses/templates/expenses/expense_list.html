@@ -1,12 +1,12 @@
 {% extends "expenses/base_bootstrap.html" %}
-
-{% block title %}My amazing list{% endblock %}
+{% load crispy_forms_tags %}
 
 {% block content %}
 <nav>
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{% url 'expenses:project_detail' project.public_id %}">Home</a></li>
-    <li class="breadcrumb-item active">List</li>
+    <li class="breadcrumb-item"><a href="{% url 'expenses:project_list' %}">Projects</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'expenses:project_detail' project.public_id %}">{{ project.name }}</a></li>
+    <li class="breadcrumb-item active">Expenses</li>
     <form class="ml-auto" action="{% url 'account_logout' %}" method="post">
       {% csrf_token %}
       <input type="submit" class="btn btn-sm btn-danger" name="logout" value="Logout">
@@ -14,17 +14,13 @@
   </ol>
 </nav>
 
-<br>
-<a class="btn btn-primary" href="{% url 'expenses:expense_create' project.public_id %}" role="button">Create a new expense</a>
-<br>
-
 {% for period_expenses in periods_expenses %}
 <br>
-<h3>{{ period_expenses.period_name }}</h3>
+<h3>{{ period_expenses.period_start_name }} - {{ period_expenses.period_end_name }}</h3>
 <br>
 <ul class="list-group">
   {% for period_expense in period_expenses.period_expenses %}
-  <a href="{% url 'expenses:expense_detail' project.public_id period_expense.expense.public_id %}" class="list-group-item list-group-item-action flex-column align-items-start">
+  <a href="{% url 'expenses:expense_detail' project.public_id period_expense.expense.public_id %}?{{ next_query_arg }}" class="list-group-item list-group-item-action flex-column align-items-start">
     <div class="d-flex w-100 justify-content-between">
       <h5 class="mb-1">#{{ period_expense.number }} {{ period_expense.expense.source }} -> {{ period_expense.expense.category.name }}</h5>
       <small class="text-muted">{{ period_expense.expense.spent_at }}</small>
@@ -33,6 +29,28 @@
     <small class="text-muted">{{ period_expense.expense.notes }}</small>
   </a>
   {% endfor %}
+  {% if not period_expenses.period_expenses %}
+  <p class="text-muted">There were no transactions recorded in this period.</p>
+  {% endif %}
 </ul>
 {% endfor %}
+
+<br>
+<h1>Create a new expense</h1>
+<br>
+
+{% crispy create_expense_form_inline %}
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
 {% endblock %}

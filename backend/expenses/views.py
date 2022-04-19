@@ -1,18 +1,23 @@
 import datetime
 import logging
 import typing
+import urllib.parse
+from dataclasses import dataclass
 
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import HttpRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
 
 from auth.models import User
-from expenses.forms import ExpenseForm, ProjectCreateForm
+from expenses.forms import CreateExpenseFormInline, ProjectCreateForm, UpdateExpenseForm
 from expenses.models import Category, Expense, Project
 
 logger = logging.getLogger(__name__)
+
+DATE_FORMAT = "%Y-%m-%d"
 
 
 class AuthenticatedHttpRequest(HttpRequest):
@@ -51,12 +56,7 @@ def project_create(request: AuthenticatedHttpRequest):
 def project_detail(request: AuthenticatedHttpRequest, project_public_id: str):
     project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
     header_rows = _generate_header_rows(project=project)
-    value_rows = list()
-    periods = _generate_periods(amount=6)
-    for period_start, period_end in periods:
-        filter_ = dict(spent_at__gte=period_start, spent_at__lte=period_end)
-        values = Category.build_values(None, filter_=filter_, project=project)
-        value_rows.append([period_start.strftime("%b %Y"), ["%.2f€" % value for value, _ in values]])
+    value_rows = _generate_value_rows(project=project)
 
     return render(
         request, "expenses/project_detail.html", dict(header_rows=header_rows, value_rows=value_rows, project=project)
@@ -66,34 +66,91 @@ def project_detail(request: AuthenticatedHttpRequest, project_public_id: str):
 @login_required
 def expense_list(request: AuthenticatedHttpRequest, project_public_id: str):
     project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
+    base_filter_args = [Q(category__project=project)]
+    arg_category = request.GET.get("category")
+    arg_show_children = request.GET.get("show_children")
+    if arg_category:
+        if arg_show_children and arg_show_children.lower() == "true":
+            base_filter_args.append(Q(category__public_id=arg_category) | Q(category__parent__public_id=arg_category))
+        else:
+            base_filter_args.append(Q(category__public_id=arg_category))
+    arg_from = request.GET.get("from")
+    from_datetime = None
+    if arg_from:
+        from_datetime = datetime.datetime.strptime(arg_from, DATE_FORMAT)
+    arg_to = request.GET.get("to")
+    to_datetime = None
+    if arg_to:
+        to_datetime = datetime.datetime.strptime(arg_to, DATE_FORMAT)
+
     periods_expenses = list()
-    periods = _generate_periods(amount=6)
+    periods = _generate_periods(amount=6, from_datetime=from_datetime, to_datetime=to_datetime)
     for period_start, period_end in periods:
-        expenses = (
-            Expense.objects.filter(spent_at__gte=period_start, spent_at__lte=period_end, category__project=project)
-            .order_by("spent_at")
-            .all()
+        filter_kwargs = dict(
+            spent_at__gte=from_datetime if from_datetime and from_datetime > period_start else period_start,
+            spent_at__lt=to_datetime if to_datetime and to_datetime < period_end else period_end,
         )
+        expenses = Expense.objects.filter(*base_filter_args, **filter_kwargs).order_by("spent_at").all()
         if not expenses:
             continue
         period_expenses = list()
         for a, expense in enumerate(expenses):
             period_expenses.append(dict(number=a + 1, expense=expense, expense_amount="%.2f€" % expense.amount))
-        periods_expenses.append(dict(period_name=period_start.strftime("%b %Y"), period_expenses=period_expenses))
+        periods_expenses.append(
+            dict(
+                period_start_name=period_start.strftime("%b %Y"),
+                period_end_name=period_end.strftime("%b %Y"),
+                period_expenses=period_expenses,
+            )
+        )
 
-    return render(request, "expenses/expense_list.html", dict(periods_expenses=periods_expenses, project=project))
+    # If there are no expenses, at least show the dates
+    if not periods_expenses:
+        periods_expenses.append(
+            dict(
+                period_start_name=periods[0][0].strftime("%b %Y"),
+                period_end_name=periods[-1][1].strftime("%b %Y"),
+                period_expenses=list(),
+            )
+        )
+
+    initial_data: dict[str, typing.Any] = dict()
+    if to_datetime:
+        initial_data["spent_at"] = to_datetime - datetime.timedelta(minutes=1)
+    if arg_category:
+        try:
+            initial_data["category"] = Category.objects.get(public_id=arg_category)
+        except Category.DoesNotExist:
+            pass
+    create_expense_form_inline = CreateExpenseFormInline(initial=initial_data, project=project)
+    next_query_arg = urllib.parse.urlencode(dict(next=request.get_full_path()))
+    create_expense_form_inline.helper.form_action = (
+        reverse("expenses:expense_create", kwargs=dict(project_public_id=project.public_id)) + f"?{next_query_arg}"
+    )
+
+    return render(
+        request,
+        "expenses/expense_list.html",
+        dict(
+            periods_expenses=periods_expenses,
+            project=project,
+            create_expense_form_inline=create_expense_form_inline,
+            next_query_arg=next_query_arg,
+        ),
+    )
 
 
 @login_required
 def expense_detail(request: AuthenticatedHttpRequest, project_public_id: str, expense_public_id: str):
     project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
     expense = get_object_or_404(Expense, public_id=expense_public_id, category__project=project)
+    arg_next = request.GET.get("next")
     if request.method == "POST":
-        form = ExpenseForm(request.POST, project=project, can_delete=True)
+        form = UpdateExpenseForm(request.POST, project=project)
         if form.data.get("delete") == "Delete":
             expense.delete()
             return HttpResponseRedirect(
-                reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
+                arg_next or reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
             )
         if form.is_valid():
             expense.spent_at = form.cleaned_data["spent_at"]
@@ -103,10 +160,10 @@ def expense_detail(request: AuthenticatedHttpRequest, project_public_id: str, ex
             expense.notes = form.cleaned_data["notes"]
             expense.save()
             return HttpResponseRedirect(
-                reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
+                arg_next or reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
             )
     else:
-        form = ExpenseForm(instance=expense, project=project, can_delete=True)
+        form = UpdateExpenseForm(instance=expense, project=project)
 
     return render(request, "expenses/expense_detail.html", dict(form=form, project=project))
 
@@ -114,8 +171,9 @@ def expense_detail(request: AuthenticatedHttpRequest, project_public_id: str, ex
 @login_required
 def expense_create(request: AuthenticatedHttpRequest, project_public_id: str):
     project = get_object_or_404(Project.objects.filter(user=request.user), public_id=project_public_id)
+    arg_next = request.GET.get("next")
     if request.method == "POST":
-        form = ExpenseForm(request.POST, project=project, can_delete=False)
+        form = CreateExpenseFormInline(request.POST, project=project)
         if form.is_valid():
             new_expense = Expense(
                 spent_at=form.cleaned_data["spent_at"],
@@ -126,15 +184,40 @@ def expense_create(request: AuthenticatedHttpRequest, project_public_id: str):
             )
             new_expense.save()
             return HttpResponseRedirect(
-                reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
+                arg_next or reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
             )
     else:
-        form = ExpenseForm(initial=dict(spent_at=timezone.now()), project=project, can_delete=False)
+        form = CreateExpenseFormInline(initial=dict(spent_at=timezone.now()), project=project)
 
     return render(request, "expenses/expense_detail.html", dict(form=form, project=project))
 
 
-def _generate_header_rows(project: Project) -> list[list[tuple[str, int, int, typing.Any]]]:
+@dataclass
+class Header:
+    name: str
+    colspan: int
+    rowspan: int
+    category: Category
+    is_total: bool
+
+    @property
+    def color(self):
+        return self.category.color
+
+    @property
+    def link(self):
+        query_args = dict()
+        query_args["category"] = self.category.public_id
+        if self.is_total:
+            query_args["show_children"] = "True"
+
+        return (
+            reverse("expenses:expense_list", kwargs=dict(project_public_id=self.category.project.public_id))
+            + f"?{urllib.parse.urlencode(query_args)}"
+        )
+
+
+def _generate_header_rows(*, project: Project) -> list[list[Header]]:
     levels = Category.build_levels(None, project=project)
     parents_considered = list()
     header_rows = list()
@@ -144,23 +227,120 @@ def _generate_header_rows(project: Project) -> list[list[tuple[str, int, int, ty
         for category, has_children in level:
             parent = category.parent
             if parent and parent not in parents_considered:
-                header_row.append(("∑", 1, levels_left, parent.color))
+                header_row.append(Header(name="∑", colspan=1, rowspan=levels_left, category=parent, is_total=True))
 
             if has_children:
                 columns_under_category = sum(
                     len(level_) + len([has_children for _, has_children in level_ if has_children])
                     for level_ in category.build_levels()
                 )
-                header_row.append((category.name, columns_under_category, 1, category.color))
+                header_row.append(
+                    Header(
+                        name=category.name, colspan=columns_under_category, rowspan=1, category=category, is_total=True
+                    )
+                )
             else:
-                header_row.append((category.name, 1, levels_left, category.color))
+                header_row.append(
+                    Header(name=category.name, colspan=1, rowspan=levels_left, category=category, is_total=False)
+                )
 
             if parent:
                 parents_considered.append(parent)
                 if parent.children.count() == parents_considered.count(parent):
-                    header_row.append(("Other", 1, levels_left, parent.color))
+                    header_row.append(
+                        Header(name="Other", colspan=1, rowspan=levels_left, category=parent, is_total=False)
+                    )
         header_rows.append(header_row)
     return header_rows
+
+
+@dataclass
+class Period:
+    project: Project
+    period_start: datetime.datetime
+    period_end: datetime.datetime
+
+    @property
+    def name(self):
+        return self.period_start.strftime("%b %Y")
+
+    @property
+    def link(self):
+        query_args = dict()
+        query_args["from"] = self.period_start.strftime(DATE_FORMAT)
+        query_args["to"] = self.period_end.strftime(DATE_FORMAT)
+        return (
+            reverse("expenses:expense_list", kwargs=dict(project_public_id=self.project.public_id))
+            + f"?{urllib.parse.urlencode(query_args)}"
+        )
+
+
+@dataclass
+class Value:
+    amount: float
+    category: typing.Optional[Category]
+    period_start: datetime.datetime
+    period_end: datetime.datetime
+    is_total: bool
+    project: typing.Optional[Project] = None
+
+    @property
+    def name(self):
+        return "%.2f€" % self.amount
+
+    @property
+    def link(self):
+        if self.category is None and self.project is None:
+            return ""
+
+        query_args = dict()
+        query_args["from"] = self.period_start.strftime(DATE_FORMAT)
+        query_args["to"] = self.period_end.strftime(DATE_FORMAT)
+        if self.is_total:
+            query_args["show_children"] = "True"
+        if self.category:
+            query_args["category"] = self.category.public_id
+
+        project = self.project or self.category.project
+        return (
+            reverse("expenses:expense_list", kwargs=dict(project_public_id=project.public_id))
+            + f"?{urllib.parse.urlencode(query_args)}"
+        )
+
+
+def _generate_value_rows(*, project: Project) -> list[tuple[Period, list[Value]]]:
+    value_rows = list()
+    periods = _generate_periods(amount=6)
+    for period_start, period_end in periods:
+        filter_ = dict(spent_at__gte=period_start, spent_at__lte=period_end)
+        values = Category.build_values(None, filter_=filter_, project=project)
+        total_of_the_period = sum(value for value, is_total, category in values if not is_total)
+        value_rows.append(
+            (
+                Period(project=project, period_start=period_start, period_end=period_end),
+                [
+                    Value(
+                        amount=value,
+                        category=category,
+                        period_start=period_start,
+                        period_end=period_end,
+                        is_total=is_total,
+                    )
+                    for value, is_total, category in values
+                ]
+                + [
+                    Value(
+                        amount=total_of_the_period,
+                        category=None,
+                        project=project,
+                        period_start=period_start,
+                        period_end=period_end,
+                        is_total=False,
+                    )
+                ],
+            )
+        )
+    return value_rows
 
 
 def _create_categories_from_template(category_template: str, /, *, project: Project):
@@ -185,12 +365,19 @@ def _create_categories_from_template(category_template: str, /, *, project: Proj
         raise NotImplementedError(f"{category_template=}")
 
 
-def _generate_periods(*, amount: int) -> list[tuple[datetime.datetime, datetime.datetime]]:
-    now = timezone.now()
-    month_total = now.month - 1 + now.year * 12
+def _generate_periods(
+    *, amount: int, from_datetime: datetime.datetime = None, to_datetime: datetime.datetime = None
+) -> list[tuple[datetime.datetime, datetime.datetime]]:
+    ending_at = to_datetime or timezone.now()
+    ending_at_months = ending_at.month - 1 + ending_at.year * 12 + 1
+    if from_datetime:
+        starting_at_months = from_datetime.month - 1 + from_datetime.year * 12
+    else:
+        starting_at_months = ending_at_months - amount
+
     return [
-        (_get_datetime_from_month_total(month_total - i), _get_datetime_from_month_total(month_total - i + 1))
-        for i in range(amount - 1, -1, -1)
+        (_get_datetime_from_month_total(m), _get_datetime_from_month_total(m + 1))
+        for m in range(starting_at_months, ending_at_months)
     ]
 
 
