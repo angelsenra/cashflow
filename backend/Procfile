@@ -1,1 +1,1 @@
-web: gunicorn --workers=3 --timeout=60 wsgi
+web: gunicorn --workers=3 --timeout=60 root.wsgi
