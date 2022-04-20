@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 
 import enum
 import os
-import typing
+import re
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -33,7 +33,11 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 
 DEBUG = ENVIRONMENT == EnvironmentType.DEVELOPMENT
 
-ALLOWED_HOSTS: list[typing.Any] = []
+ALLOWED_HOSTS: list[str] = (
+    [".localhost", "127.0.0.1", "[::1]"]
+    if ENVIRONMENT == EnvironmentType.DEVELOPMENT
+    else ["angelsenra-cashflow.herokuapp.com"]
+)
 
 
 AUTHENTICATION_BACKENDS = [
@@ -78,7 +82,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "urls"
+ROOT_URLCONF = "root.urls"
 
 TEMPLATES = [
     {
@@ -96,18 +100,34 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "wsgi.application"
+WSGI_APPLICATION = "root.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+if ENVIRONMENT == EnvironmentType.DEVELOPMENT and "DATABASE_URL" not in os.environ:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+else:
+    DATABASE_URL = os.environ["DATABASE_URL"]
+    regex_match = re.match("postgres://([^:]+):([^@]+)@([^:]+):(\d+)/(\w+)", DATABASE_URL)
+    assert regex_match, "The Postgres DATABASE_URL doesn't follow the expected pattern. Please check it out."
+    db_user, db_password, db_host, db_port, db_name = regex_match.groups()
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": db_name,
+            "USER": db_user,
+            "PASSWORD": db_password,
+            "HOST": db_host,
+            "PORT": db_port,
+        }
+    }
 
 
 # Password validation
@@ -144,7 +164,8 @@ USE_TZ = False
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "static/" if DEBUG else "https://www.angelsenra.com/cashflow/backend/static/"
+STATIC_ROOT = "../build/backend/static"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
@@ -178,3 +199,6 @@ SOCIALACCOUNT_PROVIDERS = {
 # For now, just print the emails to the console but don't actually send them
 # TODO EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+CSRF_COOKIE_SECURE = ENVIRONMENT != EnvironmentType.DEVELOPMENT
+SESSION_COOKIE_SECURE = ENVIRONMENT != EnvironmentType.DEVELOPMENT
