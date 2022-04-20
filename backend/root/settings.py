@@ -163,7 +163,7 @@ USE_TZ = False
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
-STATIC_URL = "static/" if DEBUG else "http://www.angelsenra.com/cashflow/backend/static/"
+STATIC_URL = "static/" if DEBUG else "https://www.angelsenra.com/cashflow/backend/static/"
 STATIC_ROOT = "../build/backend/static"
 
 # Default primary key field type
