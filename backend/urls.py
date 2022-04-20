@@ -13,6 +13,8 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
@@ -20,10 +22,12 @@ from django.urls import include, path
 # https://github.com/python/mypy/issues/2427
 admin.site.login = login_required(admin.site.login)  # type: ignore
 
+# TODO serving static files like this is not a good idea for production. This is just temporary.
+# https://docs.djangoproject.com/en/4.0/howto/static-files/deployment/
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),
     path("accounts/", include("auth.urls")),
     path("", include("expenses.urls")),
     path("polls/", include("polls.urls")),
-]
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
