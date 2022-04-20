@@ -33,7 +33,11 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 
 DEBUG = ENVIRONMENT == EnvironmentType.DEVELOPMENT
 
-ALLOWED_HOSTS: list[typing.Any] = []
+ALLOWED_HOSTS: list[str] = (
+    [".localhost", "127.0.0.1", "[::1]"]
+    if ENVIRONMENT == EnvironmentType.DEVELOPMENT
+    else ["angelsenra-cashflow.herokuapp.com"]
+)
 
 
 AUTHENTICATION_BACKENDS = [
@@ -178,3 +182,8 @@ SOCIALACCOUNT_PROVIDERS = {
 # For now, just print the emails to the console but don't actually send them
 # TODO EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# TODO properly build statics on production. For now this is just ignored
+STATIC_ROOT = "../build"
+
+CSRF_COOKIE_SECURE = ENVIRONMENT != EnvironmentType.DEVELOPMENT
+SESSION_COOKIE_SECURE = ENVIRONMENT != EnvironmentType.DEVELOPMENT
