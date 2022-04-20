@@ -116,6 +116,7 @@ if ENVIRONMENT == EnvironmentType.DEVELOPMENT and "DATABASE_URL" not in os.envir
 else:
     DATABASE_URL = os.environ["DATABASE_URL"]
     regex_match = re.match("postgres://([^:]+):([^@]+)@([^:]+):(\d+)/(\w+)", DATABASE_URL)
+    assert regex_match, "The Postgres DATABASE_URL doesn't follow the expected pattern. Please check it out."
     db_user, db_password, db_host, db_port, db_name = regex_match.groups()
     DATABASES = {
         "default": {

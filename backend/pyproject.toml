@@ -17,4 +17,4 @@ plugins = ["mypy_django_plugin.main"]
 ignore_missing_imports = "True"
 
 [tool.django-stubs]
-django_settings_module = "settings"
+django_settings_module = "root.settings"
