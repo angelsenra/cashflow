@@ -1,1 +1,1 @@
-web: gunicorn --workers=3 --timeout=60 root.wsgi
+web: python manage.py migrate; gunicorn --workers=3 --timeout=60 root.wsgi
