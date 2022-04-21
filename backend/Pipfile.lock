@@ -369,10 +369,10 @@
         },
         "types-pyyaml": {
             "hashes": [
-                "sha256:53c4379c7c8199d4fc5098060c51d58d38283e93d7f27bb80c8abe663456317d",
-                "sha256:d3d99e0a37a2fd37f35a9e4b4f794034192dac2aea2efc84c1bcde00ed66e150"
+                "sha256:59480cf44595d836aaae050f35e3c39f197f3a833679ef3978d97aa9f2fb7def",
+                "sha256:7b273a34f32af9910cf9405728c9d2ad3afc4be63e4048091a1a73d76681fe67"
             ],
-            "version": "==6.0.6"
+            "version": "==6.0.7"
         },
         "typing-extensions": {
             "hashes": [
@@ -392,14 +392,6 @@
         }
     },
     "develop": {
-        "appnope": {
-            "hashes": [
-                "sha256:02bd91c4de869fbb1e1c50aafc4098827a7a54ab2f39d9dcba6c9547ed920e24",
-                "sha256:265a455292d0bd8a72453494fa24df5a11eb18373a60c7c0430889f22548605e"
-            ],
-            "markers": "sys_platform == 'darwin'",
-            "version": "==0.1.3"
-        },
         "astroid": {
             "hashes": [
                 "sha256:4e5ba10571e197785e312966ea5efb2f5783176d4c1a73fa922d474ae2be59f7",
@@ -671,11 +663,11 @@
         },
         "pylint": {
             "hashes": [
-                "sha256:8b1265173abaf37c2e7a21989d05fd6b0f8032c6772f85abe3b0652903aac66c",
-                "sha256:939e67253d1b8569a4c827d933debf603f999ba745775c66e36463922d4e320b"
+                "sha256:13ddbbd8872c804574149e81197c28877eba75224ba6b76cd8652fc31df55c1c",
+                "sha256:911d3a97c808f7554643bcc5416028cfdc42eae34ed129b150741888c688d5d5"
             ],
             "index": "pypi",
-            "version": "==2.13.6"
+            "version": "==2.13.7"
         },
         "setuptools": {
             "hashes": [
